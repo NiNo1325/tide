@@ -741,7 +741,52 @@ function mapNodes(){
 }
 function openMap(){const nl=nextLevel();mapWorld=nl.di;mapView=true;mapNodes();showScreen(null);$('mapBack').style.display='block';}
 function closeMap(){mapView=false;$('mapBack').style.display='none';refreshHome();showScreen('home');}
-function drawMap(){ctx.textAlign='center';ctx.fillStyle='rgba(234,251,255,.9)';ctx.font='600 16px -apple-system,Helvetica,Arial,sans-serif';ctx.fillText('CARTE',W/2,H*0.12);} // remplacé en Task 2
+function drawMap(){
+  const di=mapWorld,nl=nextLevel();
+  ctx.textAlign='center';ctx.textBaseline='alphabetic';
+  // en-tête + flèches
+  ctx.fillStyle='rgba(234,251,255,.95)';
+  ctx.font='600 16px -apple-system,Helvetica,Arial,sans-serif';
+  ctx.fillText('MONDE '+(di+1)+' · '+DIFFS[di].name, W/2, H*0.11);
+  ctx.font='600 26px -apple-system,Helvetica,Arial,sans-serif';
+  ctx.fillStyle=di>0?'rgba(234,251,255,.8)':'rgba(234,251,255,.25)';
+  ctx.fillText('‹', W*0.14, H*0.115);
+  ctx.fillStyle=di<DIFFS.length-1?'rgba(234,251,255,.8)':'rgba(234,251,255,.25)';
+  ctx.fillText('›', W*0.86, H*0.115);
+  let tot=0;for(let i=0;i<TRACKS.length;i++)tot+=starsFor(i,di);
+  ctx.font='600 13px -apple-system,Helvetica,Arial,sans-serif';ctx.fillStyle='#ffd98a';
+  ctx.fillText('★ '+tot+' / '+(TRACKS.length*3), W/2, H*0.11+22);
+  if(!worldUnlocked(di)){ctx.fillStyle='rgba(255,154,138,.9)';ctx.fillText('🔒 monde verrouillé', W/2, H*0.11+42);}
+  // chemin
+  for(let i=0;i<mapPos.length-1;i++){
+    const a=mapPos[i],b=mapPos[i+1],unlocked=levelUnlocked(i+1,di);
+    ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.lineWidth=4;
+    if(unlocked){ctx.setLineDash([]);ctx.strokeStyle='rgba(255,255,255,.22)';}
+    else{ctx.setLineDash([4,8]);ctx.strokeStyle='rgba(255,255,255,.10)';}
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  // nœuds
+  for(let i=0;i<mapPos.length;i++){
+    const p=mapPos[i],unlocked=levelUnlocked(i,di),st=starsFor(i,di),isNext=(nl.ti===i&&nl.di===di);
+    if(isNext){const a=hexToRgb(TRACKS[i].accent);ctx.beginPath();ctx.arc(p.x,p.y,30,0,Math.PI*2);
+      ctx.fillStyle=`rgba(${a[0]},${a[1]},${a[2]},${.25+.12*Math.sin(performance.now()/300)})`;ctx.fill();}
+    ctx.beginPath();ctx.arc(p.x,p.y,20,0,Math.PI*2);
+    ctx.fillStyle=unlocked?TRACKS[i].accent:'#39474f';ctx.fill();
+    ctx.lineWidth=2;ctx.strokeStyle='rgba(255,255,255,.5)';ctx.stroke();
+    ctx.fillStyle=unlocked?'#04141f':'rgba(234,251,255,.5)';
+    ctx.font='700 14px -apple-system,Helvetica,Arial,sans-serif';
+    ctx.fillText(unlocked?String(i+1):'🔒',p.x,p.y+5);
+    ctx.font='12px -apple-system,Helvetica,Arial,sans-serif';ctx.fillStyle='#ffd98a';
+    ctx.fillText('★'.repeat(st)+'☆'.repeat(3-st),p.x,p.y+36);
+  }
+  // mascotte sur le nœud courant (si on est dans le bon monde)
+  if(nl.di===di){const p=mapPos[nl.ti],bob=Math.sin(performance.now()/280)*4;
+    const rg=ctx.createRadialGradient(p.x,p.y-32+bob,0,p.x,p.y-32+bob,18);
+    rg.addColorStop(0,`rgba(${ACC[0]},${ACC[1]},${ACC[2]},.5)`);rg.addColorStop(1,`rgba(${ACC[0]},${ACC[1]},${ACC[2]},0)`);
+    ctx.fillStyle=rg;ctx.beginPath();ctx.arc(p.x,p.y-32+bob,18,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(p.x,p.y-32+bob,8,0,Math.PI*2);ctx.fillStyle='#eafbff';ctx.fill();}
+}
 function mapTap(x,y){} // remplacé en Task 3
 
 /* ================= RENDER ================= */
