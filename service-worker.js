@@ -1,4 +1,4 @@
-const CACHE = 'tide-shell-v1';
+const CACHE = 'tide-shell-v2';
 const SHELL = [
   './',
   './index.html',
@@ -24,12 +24,13 @@ self.addEventListener('fetch', e => {
     return; // laisse passer au réseau
   }
   if (e.request.method !== 'GET') return;
-  // App shell : cache-first, repli réseau.
+  // Network-first : on sert toujours la version fraîche quand le réseau répond,
+  // et on met à jour le cache. Hors-ligne, on retombe sur le cache (puis index.html).
   e.respondWith(
-    caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {
+    fetch(e.request).then(res => {
       const copy = res.clone();
       caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
       return res;
-    }).catch(() => caches.match('./index.html')))
+    }).catch(() => caches.match(e.request).then(hit => hit || caches.match('./index.html')))
   );
 });
