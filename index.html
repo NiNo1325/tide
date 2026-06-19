@@ -787,7 +787,23 @@ function drawMap(){
     ctx.fillStyle=rg;ctx.beginPath();ctx.arc(p.x,p.y-32+bob,18,0,Math.PI*2);ctx.fill();
     ctx.beginPath();ctx.arc(p.x,p.y-32+bob,8,0,Math.PI*2);ctx.fillStyle='#eafbff';ctx.fill();}
 }
-function mapTap(x,y){} // remplacé en Task 3
+function mapTap(x,y){
+  if(y<H*0.17){
+    if(x<W*0.33){mapWorld=Math.max(0,mapWorld-1);return;}
+    if(x>W*0.67){mapWorld=Math.min(DIFFS.length-1,mapWorld+1);return;}
+    return;
+  }
+  for(let i=0;i<mapPos.length;i++){
+    const p=mapPos[i];
+    if(Math.hypot(x-p.x,y-p.y)<26){
+      if(levelUnlocked(i,mapWorld)){
+        mapView=false;$('mapBack').style.display='none';
+        selTrack=i;selDiff=mapWorld;startGame();
+      }else toast('Niveau verrouillé 🔒');
+      return;
+    }
+  }
+}
 
 /* ================= RENDER ================= */
 function loop(){
