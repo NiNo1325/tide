@@ -780,6 +780,10 @@ function drawParticles(){for(let i=game.particles.length-1;i>=0;i--){const p=gam
   ctx.beginPath();ctx.arc(p.x,p.y,p.r*p.life,0,Math.PI*2);
   ctx.fillStyle=`rgba(${p.col[0]},${p.col[1]},${p.col[2]},${p.life})`;ctx.fill();}}
 function drawHUD(){
+  const prog=game.total?Math.max(0,Math.min(1,game.nextNode/game.total)):0;
+  const bw=W*.6,bx=W*.2,by=H*.06;
+  ctx.fillStyle='rgba(255,255,255,.12)';ctx.fillRect(bx,by,bw,4);
+  ctx.fillStyle=`rgba(${ACC[0]},${ACC[1]},${ACC[2]},.9)`;ctx.fillRect(bx,by,bw*prog,4);
   ctx.textAlign='center';
   ctx.fillStyle='rgba(234,251,255,.95)';
   ctx.font='700 '+Math.round(Math.min(W*.16,86))+'px -apple-system,Helvetica,Arial,sans-serif';
