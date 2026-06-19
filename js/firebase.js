@@ -102,5 +102,21 @@ api.friendsLeaderboard = async function(ti,di){
   return rows;
 };
 
+api.deleteAccount = async function(){
+  const u = api.user; if(!u) return;
+  const { db, getDocs, deleteDoc, doc, collection, query, where } = api._db;
+  const { deleteUser } = api._auth;
+  // scores de l'utilisateur
+  const ss = await getDocs(query(collection(db,'scores'), where('uid','==',u.uid)));
+  for(const d of ss.docs){ await deleteDoc(d.ref); }
+  // amitiés impliquant l'utilisateur
+  const fs = await getDocs(query(collection(db,'friendships'), where('users','array-contains',u.uid)));
+  for(const d of fs.docs){ await deleteDoc(d.ref); }
+  // doc user
+  await deleteDoc(doc(db,'users',u.uid));
+  // compte Auth
+  await deleteUser(u);
+};
+
 window.tideFb = api;
 window.dispatchEvent(new Event('tidefb-ready'));

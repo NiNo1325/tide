@@ -681,7 +681,19 @@ async function openLeaderboard(){
     ).join('')+'</div>';
   }catch(e){ body.innerHTML='<div class="note">Erreur de chargement du classement.</div>'; console.warn(e); }
 }
-function confirmDeleteAccount(){ toast('Suppression — bientôt'); } /* remplacé en Task 10 */
+async function confirmDeleteAccount(){
+  if(!window.tideFb || !window.tideFb.user) return;
+  if(!confirm('Supprimer définitivement ton compte et toutes tes données (scores, amitiés) ? Action irréversible.')) return;
+  try{
+    const uid=window.tideFb.user.uid;
+    await window.tideFb.deleteAccount();
+    delete profiles['g_'+uid]; currentId=null; await persist();
+    refreshHome(); buildProfile(); showScreen('home'); toast('Compte supprimé');
+  }catch(e){
+    console.warn(e);
+    toast('Reconnecte-toi puis réessaie (sécurité)'); // deleteUser exige une connexion récente
+  }
+}
 function buildProfile(){
   const b=$('profileBody');const p=curProfile();
   if(!p){
