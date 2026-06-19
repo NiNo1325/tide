@@ -237,6 +237,19 @@ function mix(a,b,t){const pa=hexToRgb(a),pb=hexToRgb(b);const c=pa.map((v,i)=>Ma
 let ACC=[54,214,195];
 function setAccent(hex){ACC=hexToRgb(hex);document.documentElement.style.setProperty('--accent',hex);}
 
+/* surfeur pixel art : rasterisé une fois en 32×32, dessiné sans lissage (pixels nets) */
+const surferImg=new Image();let surferReady=false,surferBuf=null;
+surferImg.onload=()=>{try{surferBuf=document.createElement('canvas');surferBuf.width=32;surferBuf.height=32;
+  const bc=surferBuf.getContext('2d');bc.imageSmoothingEnabled=false;bc.drawImage(surferImg,0,0,32,32);surferReady=true;}catch(e){}};
+surferImg.src='assets/surfer.svg';
+const SURFER_GAME=30,SURFER_MAP=30;   // tailles à l'écran (réglables)
+function drawSurfer(cx,cy,size){
+  if(!surferReady){ctx.beginPath();ctx.arc(cx,cy,8,0,Math.PI*2);ctx.fillStyle='#eafbff';ctx.fill();return;}
+  const prev=ctx.imageSmoothingEnabled;ctx.imageSmoothingEnabled=false;
+  ctx.drawImage(surferBuf,Math.round(cx-size/2),Math.round(cy-size/2),size,size);
+  ctx.imageSmoothingEnabled=prev;
+}
+
 /* ================= PERSISTENCE ================= */
 const store={
   async get(k){try{return localStorage.getItem(k);}catch(e){return null;}},
@@ -785,7 +798,7 @@ function drawMap(){
     const rg=ctx.createRadialGradient(p.x,p.y-32+bob,0,p.x,p.y-32+bob,18);
     rg.addColorStop(0,`rgba(${ACC[0]},${ACC[1]},${ACC[2]},.5)`);rg.addColorStop(1,`rgba(${ACC[0]},${ACC[1]},${ACC[2]},0)`);
     ctx.fillStyle=rg;ctx.beginPath();ctx.arc(p.x,p.y-32+bob,18,0,Math.PI*2);ctx.fill();
-    ctx.beginPath();ctx.arc(p.x,p.y-32+bob,8,0,Math.PI*2);ctx.fillStyle='#eafbff';ctx.fill();}
+    drawSurfer(p.x,p.y-32+bob,SURFER_MAP);}
 }
 function mapTap(x,y){
   if(y<H*0.17){
@@ -867,7 +880,7 @@ function drawWorld(intensity){
   rg.addColorStop(0,'rgba(234,251,255,.9)');rg.addColorStop(.4,`rgba(${ACC[0]},${ACC[1]},${ACC[2]},.5)`);
   rg.addColorStop(1,`rgba(${ACC[0]},${ACC[1]},${ACC[2]},0)`);
   ctx.fillStyle=rg;ctx.beginPath();ctx.arc(ball.x,ball.y,26,0,Math.PI*2);ctx.fill();
-  ctx.beginPath();ctx.arc(ball.x,ball.y,8,0,Math.PI*2);ctx.fillStyle='#eafbff';ctx.fill();
+  drawSurfer(ball.x,ball.y,SURFER_GAME);
 }
 function drawParticles(){for(let i=game.particles.length-1;i>=0;i--){const p=game.particles[i];
   p.x+=p.vx;p.y+=p.vy;p.vy+=.12;p.life-=.025;if(p.life<=0){game.particles.splice(i,1);continue;}

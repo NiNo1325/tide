@@ -1,8 +1,9 @@
-const CACHE = 'tide-shell-v2';
+const CACHE = 'tide-shell-v3';
 const SHELL = [
   './',
   './index.html',
   './manifest.webmanifest',
+  './assets/surfer.svg',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/maskable-512.png'
