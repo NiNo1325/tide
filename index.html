@@ -393,6 +393,27 @@ function stab(t,freqs,dur,bright){dur=dur||.22;
   g.connect(lp);lp.connect(master);
   freqs.forEach((f,i)=>{const o=actx.createOscillator();o.type='sawtooth';o.frequency.value=f;o.detune.value=(i-1)*7;
     o.connect(g);o.start(t);o.stop(t+dur+.05);});}
+function bell(t,freq,vel,bright){vel=vel||.3;
+  const car=actx.createOscillator(),mod=actx.createOscillator(),mg=actx.createGain(),g=actx.createGain();
+  car.type='sine';mod.type='sine';car.frequency.value=freq;mod.frequency.value=freq*(bright?3.01:2.01);
+  mg.gain.setValueAtTime(freq*(bright?1.6:1.0),t);mg.gain.exponentialRampToValueAtTime(freq*.2,t+.25);
+  mod.connect(mg);mg.connect(car.frequency);
+  adsr(g,t,.004,vel,bright?.5:.7);car.connect(g);g.connect(master);
+  const send=actx.createGain();send.gain.value=.3;g.connect(send);send.connect(delaySend);
+  car.start(t);mod.start(t);car.stop(t+.9);mod.stop(t+.9);}
+function pianoNote(t,freq,vel){vel=vel||.3;
+  const o=actx.createOscillator(),o2=actx.createOscillator(),lp=actx.createBiquadFilter(),g=actx.createGain();
+  o.type='sawtooth';o2.type='sawtooth';o.frequency.value=freq;o2.frequency.value=freq;o2.detune.value=8;
+  lp.type='lowpass';lp.frequency.setValueAtTime(4200,t);lp.frequency.exponentialRampToValueAtTime(1100,t+.18);
+  adsr(g,t,.004,vel,.32);o.connect(lp);o2.connect(lp);lp.connect(g);g.connect(master);
+  o.start(t);o2.start(t);o.stop(t+.4);o2.stop(t+.4);}
+function blip(t,freq,vel,bright){vel=vel||.3;
+  const o=actx.createOscillator(),lp=actx.createBiquadFilter(),g=actx.createGain();
+  o.type=bright?'square':'sawtooth';o.frequency.value=freq;
+  lp.type='lowpass';lp.frequency.value=bright?5200:2400;
+  adsr(g,t,.003,vel,bright?.14:.2);o.connect(lp);lp.connect(g);g.connect(master);
+  const send=actx.createGain();send.gain.value=bright?.4:.2;g.connect(send);send.connect(delaySend);
+  o.start(t);o.stop(t+.3);}
 
 /* ================= TRACKS & DIFFICULTIES ================= */
 const N=note;
