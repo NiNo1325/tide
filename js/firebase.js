@@ -44,3 +44,4 @@ api.ready = new Promise(resolve => {
 });
 
 window.tideFb = api;
+window.dispatchEvent(new Event('tidefb-ready'));

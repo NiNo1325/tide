@@ -228,6 +228,20 @@ async function loadProfiles(){
   const c=await store.get('tide_current');currentId=(c&&profiles[c])?c:null;
 }
 async function persist(){await store.set('tide_profiles',JSON.stringify(profiles));await store.set('tide_current',currentId||'');}
+async function syncFromCloud(){ /* implémenté Task 7 */ }
+function wireAuth(){
+  if(!window.tideFb) return;
+  window.tideFb.onChange(async (u)=>{
+    if (u){
+      const id = 'g_'+u.uid;
+      if (!profiles[id]) profiles[id] = { id, name:(u.displayName||'Joueur').slice(0,20), email:(u.email||''), uid:u.uid, created:Date.now(), stats:{}, history:[] };
+      else { profiles[id].name=(u.displayName||profiles[id].name); profiles[id].email=(u.email||profiles[id].email); }
+      currentId = id; await persist();
+      await syncFromCloud();
+    }
+    refreshHome(); buildProfile();
+  });
+}
 function curProfile(){return currentId?profiles[currentId]:null;}
 function createProfile(name,email){
   const id='p'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
@@ -585,8 +599,17 @@ function showScreen(name){
   $('chip').style.display=(name&&name!=='over')?'flex':'none';
 }
 function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),2200);}
-function refreshChip(){const p=curProfile();$('chipName').textContent=p?p.name:'Invité';
-  $('chipAv').textContent=(p?p.name:'?').slice(0,1).toUpperCase();}
+function refreshChip(){
+  const u = window.tideFb && window.tideFb.user;
+  if (u){
+    $('chipName').textContent = u.displayName || 'Joueur';
+    $('chipAv').textContent = (u.displayName || '?').slice(0,1).toUpperCase();
+  } else {
+    const p = curProfile();
+    $('chipName').textContent = p ? p.name : 'Invité';
+    $('chipAv').textContent = (p ? p.name : '?').slice(0,1).toUpperCase();
+  }
+}
 function refreshHome(){
   $('trackName').textContent=TRACKS[selTrack].name;
   $('trackSwatch').style.background=TRACKS[selTrack].accent;
@@ -608,30 +631,49 @@ function buildTrackCards(){const c=$('trackCards');c.innerHTML='';TRACKS.forEach
   el.onclick=e=>{if(e.target.closest('.play'))return;selTrack=i;buildTrackCards();refreshHome();};
   el.querySelector('.play .btn').onclick=e=>{e.stopPropagation();previewTrack(i);};
   c.appendChild(el);});}
+function openLeaderboard(){ toast('Classement — bientôt'); }      /* remplacé en Task 9 */
+function confirmDeleteAccount(){ toast('Suppression — bientôt'); } /* remplacé en Task 10 */
 function buildProfile(){
   const b=$('profileBody');const p=curProfile();
   if(!p){
-    b.innerHTML=`<div class="brand sm">crée ton profil</div>
-      <div class="sub">Pour garder la trace de tes scores par musique et difficulté.</div>
-      <div class="field"><label>Nom de joueur</label><input id="pfName" maxlength="20" placeholder="Ton blaze"></div>
-      <div class="field"><label>Email (optionnel)</label><input id="pfEmail" type="email" maxlength="60" placeholder="toi@gmail.com"></div>
+    b.innerHTML=`<div class="brand sm">connexion</div>
+      <div class="sub">Connecte-toi avec Google pour sauvegarder tes scores et les retrouver sur tous tes appareils.</div>
       <div class="sp"></div>
-      <button class="btn primary wide" id="pfCreate">Créer mon profil</button>
-      <div class="note">Profil local : tes scores sont gardés sur cet appareil. La vraie connexion Google (synchro entre appareils) demande un serveur — voir la note du créateur.</div>`;
+      <button class="btn primary wide" id="pfGoogle">Se connecter avec Google</button>
+      <div class="sp"></div>
+      <div class="sub" style="font-size:13px;opacity:.8">— ou joue sans compte —</div>
+      <div class="field"><label>Nom de joueur (local)</label><input id="pfName" maxlength="20" placeholder="Ton blaze"></div>
+      <button class="btn wide" id="pfCreate">Continuer sans compte</button>
+      <div class="note">Sans compte, tes scores restent sur cet appareil uniquement.</div>`;
+    b.querySelector('#pfGoogle').onclick=()=>{
+      if(window.tideFb){ toast('Redirection Google…'); window.tideFb.signIn(); }
+      else toast('Firebase indisponible');
+    };
     b.querySelector('#pfCreate').onclick=()=>{const n=b.querySelector('#pfName').value.trim();
-      createProfile(n,b.querySelector('#pfEmail').value.trim());refreshHome();buildProfile();toast('Profil créé ✓');};
+      createProfile(n,'');refreshHome();buildProfile();toast('Profil local créé ✓');};
   }else{
+    const u = window.tideFb && window.tideFb.user;
+    const name = u ? (u.displayName||'Joueur') : p.name;
+    const email = u ? (u.email||'') : (p.email||'');
     let rows='';let any=false;
     TRACKS.forEach((t,ti)=>DIFFS.forEach((d,di)=>{const s=p.stats[ti+'|'+di];
       if(s){any=true;rows+=`<div class="r"><span class="k">${t.name} · ${d.name}</span><span class="v">${s.best}</span></div>`;}}));
     if(!any)rows='<div class="note">Aucune partie enregistrée pour l’instant. Joue une vague !</div>';
-    b.innerHTML=`<div class="brand sm">${p.name}</div>
-      ${p.email?`<div class="sub">${p.email}</div>`:''}
-      <div class="stats">${rows}</div><div class="sp"></div>
-      <button class="btn wide" id="pfSwitch">Changer / nouveau profil</button>
-      <div class="sp"></div><button class="btn ghost" id="pfLogout">Se déconnecter</button>`;
-    b.querySelector('#pfSwitch').onclick=()=>{currentId=null;persist();buildProfile();refreshHome();};
-    b.querySelector('#pfLogout').onclick=()=>{currentId=null;persist();buildProfile();refreshHome();toast('Déconnecté');};
+    b.innerHTML=`<div class="brand sm">${name}</div>
+      ${email?`<div class="sub">${email}</div>`:''}
+      ${u?'<div class="note">✓ Connecté avec Google — scores synchronisés.</div>':''}
+      <div class="stats">${rows}</div>
+      <div class="sp"></div>
+      <button class="btn wide" id="pfLeaderboard">⚡ Classement d'amis</button>
+      <div class="sp"></div>
+      <button class="btn ghost" id="pfLogout">Se déconnecter</button>
+      ${u?'<div class="sp"></div><button class="btn ghost" id="pfDelete" style="color:#ff8a8a">Supprimer mon compte</button>':''}`;
+    b.querySelector('#pfLeaderboard').onclick=()=>openLeaderboard();
+    b.querySelector('#pfLogout').onclick=()=>{
+      if(u && window.tideFb){ window.tideFb.signOut(); }
+      currentId=null;persist();buildProfile();refreshHome();toast('Déconnecté');
+    };
+    const del=b.querySelector('#pfDelete'); if(del) del.onclick=()=>confirmDeleteAccount();
   }
 }
 function showOver(){
@@ -700,6 +742,11 @@ requestAnimationFrame(loop);
 (async function init(){
   await loadProfiles();
   refreshHome();
+  // Lier l'état d'auth Firebase au profil courant.
+  // Le module firebase.js est différé (chargement CDN) : on l'attend via l'évènement
+  // 'tidefb-ready' s'il n'est pas encore prêt au moment de l'init.
+  if (window.tideFb) wireAuth();
+  else window.addEventListener('tidefb-ready', wireAuth, {once:true});
   const inc=parseIncoming();
   if(inc){showIncomingChallenge(inc);}
   else{showScreen('home');}
