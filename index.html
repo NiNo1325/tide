@@ -918,6 +918,16 @@ function showOver(){
     $('overResult').innerHTML=`<div class="result ${win?'win':'lose'}">${win?'défi relevé ✓':'pas cette fois'}</div>`;
     $('overSub').innerHTML=`toi <b>${game.score}</b> &nbsp;·&nbsp; ${pendingChallenge.n} <b>${pendingChallenge.s}</b>`;
     $('challengeFriendBtn').textContent='⚡ Renvoyer un défi';
+  }else if(game.state==='done'){
+    const pct=Math.round(game.perfects/Math.max(1,game.total)*100);
+    const stars=pct>=100?3:pct>=70?2:1;
+    const starStr='★'.repeat(stars)+'☆'.repeat(3-stars);
+    $('overTitle').textContent=pct>=100?'parfait !':'morceau terminé';
+    $('overResult').innerHTML=`<div class="result win">${pct}%</div>`+
+      `<div class="row" style="font-size:24px;letter-spacing:.25em;color:var(--gold)">${starStr}</div>`;
+    const st=(curProfile()&&curProfile().stats[selTrack+'|'+selDiff])||{};
+    $('overSub').innerHTML='meilleur&nbsp;<b>'+(st.pct||pct)+'%</b>';
+    $('challengeFriendBtn').textContent='⚡ Défier un ami';
   }else{
     $('overTitle').textContent='la vague s’est brisée';
     $('overResult').innerHTML=(game.perfects?`<div class="row">${game.perfects} perfect</div>`:'');
