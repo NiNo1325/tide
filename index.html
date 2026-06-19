@@ -518,7 +518,10 @@ function parseIncoming(){try{const m=(location.hash||'').match(/defi=([^&]+)/);i
   if(c&&typeof c.s==='number'&&TRACKS[c.ti]&&DIFFS[c.di])return c;}}catch(e){}return null;}
 async function shareChallenge(){
   const p=curProfile();
-  const payload={ti:selTrack,di:selDiff,s:game.score,n:(p?p.name:'Quelqu’un').slice(0,20)};
+  const u = window.tideFb && window.tideFb.user;
+  const payload={ti:selTrack,di:selDiff,s:game.score,
+    n:(u?(u.displayName||'Quelqu’un'):(p?p.name:'Quelqu’un')).slice(0,20),
+    u:u?u.uid:undefined, dn:u?(u.displayName||''):undefined};
   const {code,url}=challengeLink(payload);
   const head=`Je te défie sur TIDE — bats ${payload.s} pts sur ${TRACKS[selTrack].name} / ${DIFFS[selDiff].name}.`;
   const full=url?`${head}\n${url}`:`${head}\nCode du défi : ${code}`;
@@ -729,7 +732,10 @@ function showIncomingChallenge(c){
     <div class="sub">${TRACKS[c.ti].name} · ${DIFFS[c.di].name}</div>
     <div class="sp"></div>
     <button class="btn primary wide" id="acceptCh">Relever le défi</button>`;
-  b.querySelector('#acceptCh').onclick=()=>startGame();
+  b.querySelector('#acceptCh').onclick=()=>{
+    if(c.u && window.tideFb && window.tideFb.user){ window.tideFb.addFriend(c.u, c.dn||c.n).catch(()=>{}); }
+    startGame();
+  };
   showScreen('challenge');
 }
 function openPasteChallenge(){

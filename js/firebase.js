@@ -75,5 +75,13 @@ api.fetchMyScores = async function(){
   return out;
 };
 
+api.addFriend = async function(otherUid, otherName){
+  const u = api.user; if(!u || !otherUid || otherUid===u.uid) return;
+  const { db, doc, setDoc, serverTimestamp } = api._db;
+  const pair = [u.uid, otherUid].sort();
+  const id = `${pair[0]}__${pair[1]}`;
+  await setDoc(doc(db,'friendships',id), { users: pair, createdAt: serverTimestamp() }, { merge:true });
+};
+
 window.tideFb = api;
 window.dispatchEvent(new Event('tidefb-ready'));
