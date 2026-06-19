@@ -250,12 +250,14 @@ async function syncFromCloud(){
     const cloud = await window.tideFb.fetchMyScores();
     // Fusion : le meilleur score gagne ; on ré-uploade ce que le cloud ne connaît pas.
     for(const key in cloud){
-      const c = cloud[key], l = p.stats[key]||{best:0,plays:0};
-      p.stats[key] = { best:Math.max(c.best,l.best), plays:Math.max(c.plays,l.plays) };
+      const c = cloud[key], l = p.stats[key]||{best:0,plays:0,pct:0,cleared:false,stars:0};
+      p.stats[key] = { best:Math.max(c.best,l.best), plays:Math.max(c.plays,l.plays),
+        pct:Math.max(c.pct||0,l.pct||0), cleared:!!(c.cleared||l.cleared), stars:Math.max(c.stars||0,l.stars||0) };
     }
     for(const key in p.stats){
       const l = p.stats[key], c = cloud[key];
-      if(!c || l.best>c.best){ const [ti,di]=key.split('|').map(Number); await window.tideFb.saveScore(ti,di,l.best,l.plays); }
+      if(!c || l.best>c.best || (l.pct||0)>(c.pct||0)){ const [ti,di]=key.split('|').map(Number);
+        await window.tideFb.saveScore(ti,di,l.best,l.plays,l.pct||0,l.cleared||false,l.stars||0); }
     }
     await persist();
     refreshHome();
@@ -285,7 +287,7 @@ function recordScore(ti,di,score,perfects){
   const p=curProfile();
   if(p){const s=p.stats[key]||{best:0,plays:0};s.plays++;if(score>s.best)s.best=score;p.stats[key]=s;
     p.history.unshift({ti,di,score,ts:Date.now()});if(p.history.length>40)p.history.pop();persist();
-    if(window.tideFb && window.tideFb.user){ window.tideFb.saveScore(ti,di,s.best,s.plays).catch(()=>{}); }
+    if(window.tideFb && window.tideFb.user){ window.tideFb.saveScore(ti,di,s.best,s.plays,s.pct||0,s.cleared||false,s.stars||0).catch(()=>{}); }
   }
   else{if(!sessionBest[key]||score>sessionBest[key])sessionBest[key]=score;}
 }
@@ -645,7 +647,16 @@ function success(i,perfect){
   if(perfect)game.shake=Math.min(game.shake+6,10);
   if(game.nextNode>=game.total) songDone();
 }
-function recordCompletion(){ /* Task 2 */ }
+function recordCompletion(ti,di,score,perfects,pct,stars){
+  const key=ti+'|'+di;const p=curProfile();
+  if(p){const s=p.stats[key]||{best:0,plays:0,pct:0,cleared:false,stars:0};
+    s.plays++;if(score>s.best)s.best=score;
+    s.cleared=true;if(pct>(s.pct||0))s.pct=pct;if(stars>(s.stars||0))s.stars=stars;
+    p.stats[key]=s;
+    p.history.unshift({ti,di,score,ts:Date.now(),pct});if(p.history.length>40)p.history.pop();persist();
+    if(window.tideFb&&window.tideFb.user){window.tideFb.saveScore(ti,di,s.best,s.plays,s.pct||0,s.cleared||false,s.stars||0).catch(()=>{});}
+  } else {if(!sessionBest[key]||score>sessionBest[key])sessionBest[key]=score;}
+}
 function songDone(){
   if(game.state!=='play')return;
   game.state='done';game.deathT=actx?actx.currentTime:0;

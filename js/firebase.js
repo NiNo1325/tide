@@ -67,13 +67,13 @@ api.ensureUser = async function(){
   }, { merge:true });
 };
 
-api.saveScore = async function(ti,di,best,plays){
+api.saveScore = async function(ti,di,best,plays,pct,cleared,stars){
   const u = api.user; if(!u) return;
   const { db, doc, setDoc, serverTimestamp } = api._db;
   const id = `${u.uid}_${ti}_${di}`;
   await setDoc(doc(db,'scores',id), {
     uid:u.uid, displayName:u.displayName||'Joueur', photoURL:u.photoURL||'',
-    ti, di, best, plays, updatedAt: serverTimestamp()
+    ti, di, best, plays, pct:pct||0, cleared:!!cleared, stars:stars||0, updatedAt: serverTimestamp()
   }, { merge:true });
 };
 
@@ -83,7 +83,7 @@ api.fetchMyScores = async function(){
   const q = query(collection(db,'scores'), where('uid','==',u.uid));
   const snap = await getDocs(q);
   const out = {};
-  snap.forEach(d => { const s=d.data(); out[`${s.ti}|${s.di}`] = { best:s.best||0, plays:s.plays||0 }; });
+  snap.forEach(d => { const s=d.data(); out[`${s.ti}|${s.di}`] = { best:s.best||0, plays:s.plays||0, pct:s.pct||0, cleared:!!s.cleared, stars:s.stars||0 }; });
   return out;
 };
 
