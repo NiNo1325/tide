@@ -424,28 +424,28 @@ const TRACKS=[
     prog:[chord(0,2,[[0,3],[3,3],[7,3]]),chord(-4,2,[[-4,3],[0,3],[3,3]]),
           chord(3,2,[[3,3],[7,3],[10,3]]),chord(-2,2,[[-2,3],[2,3],[5,3]])],
     bassHits:[[0,1],[6,1.5],[8,1],[14,1.5]], kickSteps:[0,8], kickGain:1,
-    hatSteps:[2,6,10,14], hatVel:.18, pentOct:[4,5] },
+    hatSteps:[2,6,10,14], hatVel:.18, pentOct:[4,5], hitVoice:'pluck' },
 
   { name:'Undertow', blurb:'Dub profond. Sub-bass massif, espace, grosses ondulations.', accent:'#4ea8ff',
     bpm:92, keyRoot:0, bassType:'sub', bassGain:.55, bassDur:.5, bassDrive:false, bassBoost:7,
     prog:[chord(0,2,[[0,3],[3,3],[7,3]]),chord(0,2,[[0,3],[3,3],[7,3]]),
           chord(-4,2,[[-4,3],[0,3],[3,3]]),chord(-2,2,[[-2,3],[2,3],[5,3]])],
     bassHits:[[0,1],[6,1],[10,1.5],[11,.5]], kickSteps:[0,8], kickGain:1.1,
-    hatSteps:[6,14], hatVel:.12, pentOct:[3,4] },
+    hatSteps:[6,14], hatVel:.12, pentOct:[3,4], hitVoice:'bell' },
 
   { name:'Riptide', blurb:'Synthwave nerveux. Basse en croches qui pousse, hats offbeat.', accent:'#ff7ac2',
     bpm:128, keyRoot:0, bassType:'arp', bassGain:.32, bassDur:.16, bassDrive:false, bassBoost:3,
     prog:[chord(0,2,[[0,3],[3,3],[7,3]]),chord(-2,2,[[-2,3],[2,3],[5,3]]),
           chord(-4,2,[[-4,3],[0,3],[3,3]]),chord(3,2,[[3,3],[7,3],[10,3]])],
     bassHits:[[0,1],[2,2],[4,1],[6,2],[8,1],[10,2],[12,1],[14,2]], kickSteps:[0,4,8,12], kickGain:1,
-    hatSteps:[2,6,10,14], hatVel:.3, pentOct:[5,6] },
+    hatSteps:[2,6,10,14], hatVel:.3, pentOct:[5,6], hitVoice:'blip', hitBright:true },
 
   { name:'Maelström', blurb:'Sombre et saturé. Sub-bass drivé, hats rapides. Pour le chaos.', accent:'#ff5a4d',
     bpm:138, keyRoot:7, bassType:'sub', bassGain:.55, bassDur:.26, bassDrive:true, bassBoost:5,
     prog:[chord(7,1,[[7,2],[10,2],[14,2]]),chord(3,1,[[3,2],[7,2],[10,2]]),
           chord(10,1,[[10,2],[14,2],[17,2]]),chord(5,1,[[5,2],[9,2],[12,2]])],
     bassHits:[[0,1],[3,1],[4,1],[6,2],[8,1],[11,1.5],[12,1],[14,2]], kickSteps:[0,4,8,12], kickGain:1.15,
-    hatSteps:[1,3,5,7,9,11,13,15], hatVel:.22, pentOct:[5,6] },
+    hatSteps:[1,3,5,7,9,11,13,15], hatVel:.22, pentOct:[5,6], hitVoice:'blip' },
 
   { name:'Sirène', blurb:'Vocal éthéré. Chœurs « aah » planants, downtempo.', accent:'#9b8cff',
     bpm:110, keyRoot:0, bassType:'sub', bassGain:.26, bassDur:.4, bassDrive:false, bassBoost:2,
@@ -453,7 +453,7 @@ const TRACKS=[
           chord(-2,2,[[-2,4],[2,4],[5,4]]),chord(3,2,[[3,4],[7,4],[10,4]])],
     bassHits:[[0,1],[8,1]], kickSteps:[0,8], kickGain:.9,
     hatSteps:[6,14], hatVel:.12, pentOct:[5,6],
-    vocSteps:[0,8], vocType:'aah', vocGain:.32, lead:true },
+    vocSteps:[0,8], vocType:'aah', vocGain:.32, lead:true, hitVoice:'voc', hitVoc:'aah' },
 
   { name:'Écume', blurb:'Vocal lumineux qui monte. Chœurs « ooh », stabs.', accent:'#41e0a3',
     bpm:124, keyRoot:2, bassType:'arp', bassGain:.30, bassDur:.16, bassDrive:false, bassBoost:2.5,
@@ -463,7 +463,7 @@ const TRACKS=[
     hatSteps:[2,6,10,14], hatVel:.2, pentOct:[5,6],
     snareSteps:[4,12], snareVel:.18, snareClap:true,
     stabSteps:[0,4,8,12], stabBright:.7,
-    vocSteps:[0,8], vocType:'ooh', vocGain:.30, lead:true },
+    vocSteps:[0,8], vocType:'ooh', vocGain:.30, lead:true, hitVoice:'voc', hitVoc:'ooh' },
 
   { name:'Abysse', blurb:'Vocal sombre. Chœurs « ooh » graves, sub-bass.', accent:'#5566aa',
     bpm:100, keyRoot:7, bassType:'sub', bassGain:.5, bassDur:.5, bassDrive:false, bassBoost:6,
@@ -471,7 +471,7 @@ const TRACKS=[
           chord(5,1,[[5,3],[8,3],[12,3]]),chord(2,1,[[2,3],[5,3],[9,3]])],
     bassHits:[[0,1],[10,1.5]], kickSteps:[0,8], kickGain:1.05,
     hatSteps:[14], hatVel:.1, pentOct:[4,5],
-    vocSteps:[0,8], vocType:'ooh', vocGain:.34, lead:true },
+    vocSteps:[0,8], vocType:'ooh', vocGain:.34, lead:true, hitVoice:'voc', hitVoc:'ooh' },
 
   { name:'Raz-de-marée', blurb:'House 90s. Four-on-floor, clap, piano stab.', accent:'#2fd0ff',
     bpm:128, keyRoot:0, bassType:'arp', bassGain:.34, bassDur:.14, bassDrive:false, bassBoost:3,
@@ -480,7 +480,7 @@ const TRACKS=[
     bassHits:[[2,1],[6,1],[10,1],[14,1]], kickSteps:[0,4,8,12], kickGain:1.05,
     hatSteps:[2,6,10,14], hatVel:.26, pentOct:[5,6],
     snareSteps:[4,12], snareVel:.22, snareClap:true,
-    stabSteps:[2,6,10,14], stabBright:.6 },
+    stabSteps:[2,6,10,14], stabBright:.6, hitVoice:'piano' },
 
   { name:'Orbite', blurb:'Trance 90s. Basse roulante, nappes saw, clap.', accent:'#7b6cff',
     bpm:136, keyRoot:5, bassType:'arp', bassGain:.30, bassDur:.12, bassDrive:false, bassBoost:3,
@@ -490,7 +490,7 @@ const TRACKS=[
     kickSteps:[0,4,8,12], kickGain:1,
     hatSteps:[2,6,10,14], hatVel:.24, pentOct:[6,7],
     snareSteps:[4,12], snareVel:.18, snareClap:true,
-    stabSteps:[0,8], stabBright:.8 },
+    stabSteps:[0,8], stabBright:.8, hitVoice:'blip' },
 
   { name:'Néon', blurb:'Synthwave 80s. Snare gated, basse arpégée, néons.', accent:'#ff5fa2',
     bpm:115, keyRoot:0, bassType:'arp', bassGain:.32, bassDur:.16, bassDrive:false, bassBoost:3,
@@ -499,7 +499,7 @@ const TRACKS=[
     bassHits:[[0,1],[2,1],[4,1],[6,1],[8,1],[10,1],[12,1],[14,1]], kickSteps:[0,8], kickGain:1,
     hatSteps:[2,6,10,14], hatVel:.2, pentOct:[5,6],
     snareSteps:[4,12], snareVel:.3, snareClap:false,
-    stabSteps:[0,8], stabBright:.5 },
+    stabSteps:[0,8], stabBright:.5, hitVoice:'bell', hitBright:true },
 
   { name:'Mirage', blurb:'Italo-disco 80s. Basse en octaves, claps, stabs brillants.', accent:'#ffce54',
     bpm:120, keyRoot:3, bassType:'arp', bassGain:.34, bassDur:.13, bassDrive:false, bassBoost:3,
@@ -508,7 +508,7 @@ const TRACKS=[
     bassHits:[[0,1],[2,2],[4,1],[6,2],[8,1],[10,2],[12,1],[14,2]], kickSteps:[0,4,8,12], kickGain:1,
     hatSteps:[2,6,10,14], hatVel:.24, pentOct:[5,6],
     snareSteps:[4,12], snareVel:.22, snareClap:true,
-    stabSteps:[0,4,8,12], stabBright:.85 },
+    stabSteps:[0,4,8,12], stabBright:.85, hitVoice:'bell', hitBright:true },
 ];
 const DIFFS=[
   {name:'Calme', blurb:'Une touche par temps. Fenêtre large, on respire.', meter:1,
@@ -622,12 +622,20 @@ function onTap(){
   if(Math.abs(dt)<=G)success(i,Math.abs(dt)<=P);
   else gameOver();
 }
+function hitSound(freq,perfect,T){
+  const vel=perfect?.4:.3;const v=T.hitVoice||'pluck';const c=actx.currentTime;
+  if(v==='bell') bell(c,freq,vel,perfect||T.hitBright);
+  else if(v==='piano') pianoNote(c,freq,vel);
+  else if(v==='blip') blip(c,freq,vel,perfect||T.hitBright);
+  else if(v==='voc') voc(c,[freq],.55,T.hitVoc||'aah',perfect?.34:.28);
+  else pluck(c,freq,vel,perfect);
+}
 function success(i,perfect){
   game.combo++;game.score++;if(perfect)game.perfects++;
   game.nextNode=i+1;genNodes(game.nodes[i].beat+12);
   const T=TRACKS[selTrack];
   const idx=game.combo%PENT.length,oct=T.pentOct[0]+Math.floor(game.combo/PENT.length)%(T.pentOct[1]-T.pentOct[0]+1);
-  pluck(actx.currentTime,N(T.keyRoot+PENT[idx],oct),perfect?.4:.3,perfect);
+  hitSound(N(T.keyRoot+PENT[idx],oct),perfect,T);
   burst(CONTACT_X,game.nodes[i].y,perfect);
   game.judge={txt:perfect?'PERFECT':'GOOD',col:perfect?'#ffd98a':TRACKS[selTrack].accent,t:performance.now()};
   if(perfect)game.shake=Math.min(game.shake+6,10);
