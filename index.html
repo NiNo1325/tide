@@ -837,17 +837,22 @@ function refreshHome(){
   refreshChip();applyTrackVisual();
 }
 function buildDiffCards(){const c=$('diffCards');c.innerHTML='';DIFFS.forEach((d,i)=>{
-  const el=document.createElement('div');el.className='opt'+(i===selDiff?' sel':'');
+  const locked=!worldUnlocked(i);
+  const el=document.createElement('div');el.className='opt'+(i===selDiff?' sel':'')+(locked?' locked':'');
   let m='';for(let k=0;k<4;k++)m+=`<i class="${k<d.meter?'on':''}"></i>`;
-  el.innerHTML=`<div class="dot"></div><div><div class="ot">${d.name}</div><div class="od">${d.blurb}</div><div class="meter">${m}</div></div>`;
-  el.onclick=()=>{selDiff=i;buildDiffCards();refreshHome();};c.appendChild(el);});}
+  el.innerHTML=`<div class="dot"></div><div style="flex:1"><div class="ot">${d.name}${locked?' 🔒':''}</div>`+
+    `<div class="od">${locked?'Réussis les 5 morceaux gratuits du monde précédent (★★).':d.blurb}</div><div class="meter">${m}</div></div>`;
+  if(!locked)el.onclick=()=>{selDiff=i;buildDiffCards();refreshHome();};
+  c.appendChild(el);});}
 function buildTrackCards(){const c=$('trackCards');c.innerHTML='';TRACKS.forEach((t,i)=>{
-  const el=document.createElement('div');el.className='opt'+(i===selTrack?' sel':'');
+  const locked=!levelUnlocked(i,selDiff);
+  const st=starsFor(i,selDiff),stars='★'.repeat(st)+'☆'.repeat(3-st);
+  const el=document.createElement('div');el.className='opt'+(i===selTrack?' sel':'')+(locked?' locked':'');
   el.innerHTML=`<div class="dot" style="border-color:${t.accent};${i===selTrack?'background:'+t.accent:''}"></div>
-    <div style="flex:1"><div class="ot">${t.name}</div><div class="od">${t.blurb}</div></div>
+    <div style="flex:1"><div class="ot">${t.name}${locked?' 🔒':''}</div><div class="od">${t.blurb}</div>
+      <div class="stars" style="color:var(--gold);letter-spacing:.15em;font-size:13px;margin-top:5px">${stars}</div></div>
     <div class="play"><button class="btn">Aperçu</button></div>`;
-  el.querySelector('.dot').parentNode;
-  el.onclick=e=>{if(e.target.closest('.play'))return;selTrack=i;buildTrackCards();refreshHome();};
+  el.onclick=e=>{if(e.target.closest('.play'))return;if(locked){toast('Niveau verrouillé 🔒');return;}selTrack=i;buildTrackCards();refreshHome();};
   el.querySelector('.play .btn').onclick=e=>{e.stopPropagation();previewTrack(i);};
   c.appendChild(el);});}
 async function openLeaderboard(){
