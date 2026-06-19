@@ -21,7 +21,8 @@ const api = {
   onChange(cb){ listeners.push(cb); if (api._known) cb(api.user); },
   signIn(){ return signInWithRedirect(auth, provider); },
   signOut(){ return fbSignOut(auth); },
-  // — Firestore (implémentés dans les tâches suivantes) —
+  // — Firestore —
+  ensureUser: async () => {},
   saveScore: async () => {},
   fetchMyScores: async () => ({}),
   addFriend: async () => {},
@@ -42,6 +43,37 @@ api.ready = new Promise(resolve => {
     resolve(u);
   });
 });
+
+api.ensureUser = async function(){
+  const u = api.user; if(!u) return;
+  const { db, doc, setDoc, serverTimestamp } = api._db;
+  await setDoc(doc(db,'users',u.uid), {
+    displayName: u.displayName||'Joueur',
+    photoURL: u.photoURL||'',
+    email: u.email||'',
+    createdAt: serverTimestamp()
+  }, { merge:true });
+};
+
+api.saveScore = async function(ti,di,best,plays){
+  const u = api.user; if(!u) return;
+  const { db, doc, setDoc, serverTimestamp } = api._db;
+  const id = `${u.uid}_${ti}_${di}`;
+  await setDoc(doc(db,'scores',id), {
+    uid:u.uid, displayName:u.displayName||'Joueur', photoURL:u.photoURL||'',
+    ti, di, best, plays, updatedAt: serverTimestamp()
+  }, { merge:true });
+};
+
+api.fetchMyScores = async function(){
+  const u = api.user; if(!u) return {};
+  const { db, getDocs, collection, query, where } = api._db;
+  const q = query(collection(db,'scores'), where('uid','==',u.uid));
+  const snap = await getDocs(q);
+  const out = {};
+  snap.forEach(d => { const s=d.data(); out[`${s.ti}|${s.di}`] = { best:s.best||0, plays:s.plays||0 }; });
+  return out;
+};
 
 window.tideFb = api;
 window.dispatchEvent(new Event('tidefb-ready'));

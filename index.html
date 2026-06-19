@@ -228,7 +228,25 @@ async function loadProfiles(){
   const c=await store.get('tide_current');currentId=(c&&profiles[c])?c:null;
 }
 async function persist(){await store.set('tide_profiles',JSON.stringify(profiles));await store.set('tide_current',currentId||'');}
-async function syncFromCloud(){ /* implémenté Task 7 */ }
+async function syncFromCloud(){
+  if(!window.tideFb || !window.tideFb.user) return;
+  const p = curProfile(); if(!p) return;
+  try{
+    await window.tideFb.ensureUser();
+    const cloud = await window.tideFb.fetchMyScores();
+    // Fusion : le meilleur score gagne ; on ré-uploade ce que le cloud ne connaît pas.
+    for(const key in cloud){
+      const c = cloud[key], l = p.stats[key]||{best:0,plays:0};
+      p.stats[key] = { best:Math.max(c.best,l.best), plays:Math.max(c.plays,l.plays) };
+    }
+    for(const key in p.stats){
+      const l = p.stats[key], c = cloud[key];
+      if(!c || l.best>c.best){ const [ti,di]=key.split('|').map(Number); await window.tideFb.saveScore(ti,di,l.best,l.plays); }
+    }
+    await persist();
+    refreshHome();
+  }catch(e){ console.warn('syncFromCloud', e); }
+}
 function wireAuth(){
   if(!window.tideFb) return;
   window.tideFb.onChange(async (u)=>{
@@ -252,7 +270,9 @@ function recordScore(ti,di,score,perfects){
   const key=ti+'|'+di;
   const p=curProfile();
   if(p){const s=p.stats[key]||{best:0,plays:0};s.plays++;if(score>s.best)s.best=score;p.stats[key]=s;
-    p.history.unshift({ti,di,score,ts:Date.now()});if(p.history.length>40)p.history.pop();persist();}
+    p.history.unshift({ti,di,score,ts:Date.now()});if(p.history.length>40)p.history.pop();persist();
+    if(window.tideFb && window.tideFb.user){ window.tideFb.saveScore(ti,di,s.best,s.plays).catch(()=>{}); }
+  }
   else{if(!sessionBest[key]||score>sessionBest[key])sessionBest[key]=score;}
 }
 function bestFor(ti,di){const key=ti+'|'+di;const p=curProfile();if(p){const s=p.stats[key];return s?s.best:0;}return sessionBest[key]||0;}
