@@ -578,13 +578,15 @@ function previewTrack(i){
 
 /* ================= GAME ================= */
 const DEBOUNCE=.09;
+const SONG_LEN=36;   // nombre de nœuds (taps) par morceau — base campagne
 const game={state:'menu',startTime:0,spb:.5,nodes:[],genBeat:0,nextNode:0,
   combo:0,score:0,perfects:0,lastTap:-1,particles:[],trail:[],judge:null,shake:0,
-  deathT:0,target:0};
+  deathT:0,target:0,total:0};
 function nodeY(b){return BASE_Y+Math.sin(b*.55+1.3)*WAVE_AMP;}
 function genNodes(upto){
   const D=DIFFS[selDiff];
   while(game.genBeat<=upto){
+    if(game.nodes.length>=game.total)return;       // morceau plein
     const b=game.genBeat,adds=[b];
     if(b>2){
       const prog=Math.min(game.score/45,1),dens=D.dens0+(D.densMax-D.dens0)*prog;
@@ -592,7 +594,7 @@ function genNodes(upto){
       if(D.sixteenth){const dq=dens*.5;if(Math.random()<dq)adds.push(b+0.25);if(Math.random()<dq)adds.push(b+0.75);}
     }
     adds.sort((x,y)=>x-y);
-    for(const bb of adds)game.nodes.push({beat:bb,y:nodeY(bb)});
+    for(const bb of adds){ if(game.nodes.length>=game.total)break; game.nodes.push({beat:bb,y:nodeY(bb)}); }
     game.genBeat++;
   }
 }
@@ -601,6 +603,7 @@ function startGame(){
   game.state='play';game.combo=0;game.score=0;game.perfects=0;game.nextNode=0;
   game.nodes=[];game.genBeat=0;game.lastTap=-1;game.particles=[];game.trail=[];
   game.judge=null;game.shake=0;game.spb=spbNow();
+  game.total=SONG_LEN;
   game.startTime=actx.currentTime+COUNTIN*game.spb;
   genNodes(16);
   master.gain.cancelScheduledValues(actx.currentTime);
@@ -640,6 +643,18 @@ function success(i,perfect){
   burst(CONTACT_X,game.nodes[i].y,perfect);
   game.judge={txt:perfect?'PERFECT':'GOOD',col:perfect?'#ffd98a':TRACKS[selTrack].accent,t:performance.now()};
   if(perfect)game.shake=Math.min(game.shake+6,10);
+  if(game.nextNode>=game.total) songDone();
+}
+function recordCompletion(){ /* Task 2 */ }
+function songDone(){
+  if(game.state!=='play')return;
+  game.state='done';game.deathT=actx?actx.currentTime:0;
+  stopScheduler();
+  if(master)master.gain.exponentialRampToValueAtTime(.0001,actx.currentTime+.6);
+  const pct=Math.round(game.perfects/Math.max(1,game.total)*100);
+  const stars=pct>=100?3:pct>=70?2:1;
+  recordCompletion(selTrack,selDiff,game.score,game.perfects,pct,stars);
+  showOver();
 }
 function gameOver(){
   if(game.state==='over')return;
