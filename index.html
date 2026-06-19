@@ -138,7 +138,8 @@
     </div>
   </div>
   <div class="stack">
-    <button class="btn primary wide" id="playBtn">Jouer</button>
+    <button class="btn primary wide" id="voyageBtn">⛵ Voyage</button>
+    <button class="btn wide" id="playBtn">Jeu libre</button>
     <div class="row" id="homeBest">Meilleur&nbsp;<b>0</b></div>
     <div class="sp"></div>
     <button class="btn ghost" id="openChallenge">⚡ J'ai un code de défi</button>
@@ -993,7 +994,10 @@ function openPasteChallenge(){
 /* ================= INPUT WIRING ================= */
 canvas.addEventListener('pointerdown',e=>{e.preventDefault();onTap();});
 window.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();onTap();}});
-$('playBtn').onclick=()=>{pendingChallenge=null;startGame();};
+$('playBtn').onclick=()=>{pendingChallenge=null;
+  if(!levelUnlocked(selTrack,selDiff)){toast('Niveau verrouillé 🔒');return;}
+  startGame();};
+$('voyageBtn').onclick=()=>{pendingChallenge=null;const nl=nextLevel();selTrack=nl.ti;selDiff=nl.di;refreshHome();startGame();};
 $('pickTrack').onclick=()=>{buildTrackCards();showScreen('track');};
 $('pickDiff').onclick=()=>{buildDiffCards();showScreen('diff');};
 $('chip').onclick=()=>{buildProfile();showScreen('profile');};
@@ -1007,6 +1011,7 @@ document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{refreshHome()
 requestAnimationFrame(loop);
 (async function init(){
   await loadProfiles();
+  if(!levelUnlocked(selTrack,selDiff)){const nl=nextLevel();selTrack=nl.ti;selDiff=nl.di;}
   refreshHome();
   // Lier l'état d'auth Firebase au profil courant.
   // Le module firebase.js est différé (chargement CDN) : on l'attend via l'évènement
