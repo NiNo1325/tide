@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
 import {
-  getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult,
+  getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
   signOut as fbSignOut, onAuthStateChanged, deleteUser
 } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
 import {
@@ -19,7 +19,19 @@ const api = {
   user: null,
   ready: null,            // Promise résolue au 1er état d'auth connu
   onChange(cb){ listeners.push(cb); if (api._known) cb(api.user); },
-  signIn(){ return signInWithRedirect(auth, provider); },
+  async signIn(){
+    // Popup d'abord (fiable sur le web desktop, contourne le souci de stockage
+    // tiers du handler de redirection). Repli en redirect si le popup est bloqué
+    // ou non supporté (utile pour la future TWA / Play Store).
+    try { return await signInWithPopup(auth, provider); }
+    catch(e){
+      const code = e && e.code;
+      if (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment') {
+        return signInWithRedirect(auth, provider);
+      }
+      throw e; // popup fermé/annulé par l'utilisateur : on ne redirige pas
+    }
+  },
   signOut(){ return fbSignOut(auth); },
   // — Firestore —
   ensureUser: async () => {},
