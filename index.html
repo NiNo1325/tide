@@ -703,6 +703,9 @@ requestAnimationFrame(loop);
   const inc=parseIncoming();
   if(inc){showIncomingChallenge(inc);}
   else{showScreen('home');}
+  if ('serviceWorker' in navigator) {
+    try { await navigator.serviceWorker.register('service-worker.js'); } catch (e) {}
+  }
 })();
 </script>
 </body>
