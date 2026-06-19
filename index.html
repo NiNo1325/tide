@@ -292,6 +292,16 @@ function recordScore(ti,di,score,perfects){
   else{if(!sessionBest[key]||score>sessionBest[key])sessionBest[key]=score;}
 }
 function bestFor(ti,di){const key=ti+'|'+di;const p=curProfile();if(p){const s=p.stats[key];return s?s.best:0;}return sessionBest[key]||0;}
+function starsFor(ti,di){const p=curProfile();if(!p)return 0;const s=p.stats[ti+'|'+di];return (s&&s.stars)||0;}
+function worldUnlocked(di){if(di<=0)return true;for(let ti=0;ti<5;ti++){if(starsFor(ti,di-1)<2)return false;}return true;}
+function songUnlocked(ti){return ti<=4 || starsFor(ti-1,0)>=2;}
+function levelUnlocked(ti,di){return worldUnlocked(di)&&songUnlocked(ti);}
+function nextLevel(){
+  for(let di=0;di<DIFFS.length;di++)for(let ti=0;ti<TRACKS.length;ti++){
+    if(levelUnlocked(ti,di)&&starsFor(ti,di)<2)return {ti,di};
+  }
+  return {ti:TRACKS.length-1,di:DIFFS.length-1};
+}
 
 /* ================= AUDIO ================= */
 let actx,master,lowShelf,comp,delay,delayFb,delaySend,noiseBuf;
