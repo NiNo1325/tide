@@ -358,23 +358,33 @@ function snare(t,vel,clap){vel=vel||.25;
     s.buffer=noiseBuf;bp.type='bandpass';bp.frequency.value=1800;bp.Q.value=.7;
     adsr(g,tt,.002,v,clap?.05:.13);s.connect(bp);bp.connect(g);g.connect(master);s.start(tt);s.stop(tt+.2);};
   if(clap){hit(t,vel*.6);hit(t+.009,vel*.85);hit(t+.018,vel);}else{hit(t,vel);}}
-const FORMANTS={aah:[800,1150,2900],ooh:[300,870,2240]};
+const FORMANTS={aah:[800,1150,2900,3900],ooh:[300,870,2240,3000]};
 function voc(t,freqs,dur,type,gain){dur=dur||1.2;gain=gain||.3;
   const fm=FORMANTS[type]||FORMANTS.aah;
+  const fgains=[1,.55,.32,.16];               // F1 dominant
   const out=actx.createGain();
   out.gain.setValueAtTime(.0001,t);out.gain.exponentialRampToValueAtTime(gain,t+.12);
   out.gain.setValueAtTime(gain,t+Math.max(.15,dur-.5));out.gain.exponentialRampToValueAtTime(.0001,t+dur);
-  const lfo=actx.createOscillator(),lfog=actx.createGain();lfo.frequency.value=5;lfog.gain.value=5;
+  // vibrato partagé (~5.5 Hz, ±12 cents)
+  const lfo=actx.createOscillator(),lfog=actx.createGain();lfo.frequency.value=5.5;lfog.gain.value=12;
   lfo.connect(lfog);lfo.start(t);lfo.stop(t+dur+.1);
+  // banc de formants partagé par tous les oscillateurs de l'accord
+  const banks=fm.map((ff,i)=>{const bp=actx.createBiquadFilter();bp.type='bandpass';
+    bp.frequency.value=ff;bp.Q.value=(i===0?7:i===1?9:10);
+    const fg=actx.createGain();fg.gain.value=fgains[i];bp.connect(fg);fg.connect(out);return bp;});
+  const feed=src=>banks.forEach(bp=>src.connect(bp));
   freqs.forEach(f=>{
-    // deux saws légèrement désaccordés → spectre riche qui alimente les formants
-    [-4,4].forEach(det=>{
-      const o=actx.createOscillator();o.type='sawtooth';o.frequency.value=f;o.detune.value=det;lfog.connect(o.detune);
-      fm.forEach((ff,i)=>{const bp=actx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=ff;bp.Q.value=3;
-        const fg=actx.createGain();fg.gain.value=(i===0?.7:i===1?.45:.28);
-        o.connect(bp);bp.connect(fg);fg.connect(out);});
-      o.start(t);o.stop(t+dur+.1);});
+    [-7,0,7].forEach(det=>{const o=actx.createOscillator();o.type='sawtooth';o.frequency.value=f;
+      o.detune.value=det;lfog.connect(o.detune);feed(o);o.start(t);o.stop(t+dur+.1);});
+    const ob=actx.createOscillator();ob.type='sawtooth';ob.frequency.value=f/2; // octave grave, corps
+    const obg=actx.createGain();obg.gain.value=.4;lfog.connect(ob.detune);ob.connect(obg);feed(obg);
+    ob.start(t);ob.stop(t+dur+.1);
   });
+  // souffle léger autour de F2
+  const ns=actx.createBufferSource();ns.buffer=noiseBuf;ns.loop=true;
+  const nbp=actx.createBiquadFilter();nbp.type='bandpass';nbp.frequency.value=fm[1];nbp.Q.value=2;
+  const ng=actx.createGain();ng.gain.value=.06;ns.connect(nbp);nbp.connect(ng);ng.connect(out);
+  ns.start(t);ns.stop(t+dur+.1);
   out.connect(master);const send=actx.createGain();send.gain.value=.3;out.connect(send);send.connect(delaySend);}
 function stab(t,freqs,dur,bright){dur=dur||.22;
   const g=actx.createGain();adsr(g,t,.005,.12,dur);
@@ -519,7 +529,7 @@ function playStep(step,t,combo){
     const chV=T.prog[Math.floor(beat/2)%T.prog.length];
     voc(t, chV.pad, spbNow()*2, T.vocType||'aah', T.vocGain||(T.lead?.32:.22));
   }
-  if(combo>=10 && sib%8===0){const ch=T.prog[Math.floor(beat/2)%T.prog.length];pad(t,ch.pad,spbNow()*2);}
+  if(combo>=10 && sib%8===0 && !T.lead){const ch=T.prog[Math.floor(beat/2)%T.prog.length];pad(t,ch.pad,spbNow()*2);}
   if(combo>=20 && (sub===1||sub===3)){const f=N(T.keyRoot+PENT[(beat+sub)%5],5);pluck(t,f,.08,true);}
   if(delaySend) delaySend.gain.setTargetAtTime(Math.min(combo/40,1)*.3,t,.2);
 }
