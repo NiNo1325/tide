@@ -362,16 +362,20 @@ const FORMANTS={aah:[800,1150,2900],ooh:[300,870,2240]};
 function voc(t,freqs,dur,type,gain){dur=dur||1.2;gain=gain||.3;
   const fm=FORMANTS[type]||FORMANTS.aah;
   const out=actx.createGain();
-  out.gain.setValueAtTime(.0001,t);out.gain.exponentialRampToValueAtTime(gain,t+.09);
-  out.gain.setValueAtTime(gain,t+Math.max(.1,dur-.5));out.gain.exponentialRampToValueAtTime(.0001,t+dur);
-  const lfo=actx.createOscillator(),lfog=actx.createGain();lfo.frequency.value=5;lfog.gain.value=4;
+  out.gain.setValueAtTime(.0001,t);out.gain.exponentialRampToValueAtTime(gain,t+.12);
+  out.gain.setValueAtTime(gain,t+Math.max(.15,dur-.5));out.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  const lfo=actx.createOscillator(),lfog=actx.createGain();lfo.frequency.value=5;lfog.gain.value=5;
   lfo.connect(lfog);lfo.start(t);lfo.stop(t+dur+.1);
-  freqs.forEach(f=>{const o=actx.createOscillator();o.type='sawtooth';o.frequency.value=f;lfog.connect(o.detune);
-    fm.forEach((ff,i)=>{const bp=actx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=ff;bp.Q.value=8;
-      const fg=actx.createGain();fg.gain.value=(i===0?.5:i===1?.3:.18);
-      o.connect(bp);bp.connect(fg);fg.connect(out);});
-    o.start(t);o.stop(t+dur+.1);});
-  out.connect(master);const send=actx.createGain();send.gain.value=.25;out.connect(send);send.connect(delaySend);}
+  freqs.forEach(f=>{
+    // deux saws légèrement désaccordés → spectre riche qui alimente les formants
+    [-4,4].forEach(det=>{
+      const o=actx.createOscillator();o.type='sawtooth';o.frequency.value=f;o.detune.value=det;lfog.connect(o.detune);
+      fm.forEach((ff,i)=>{const bp=actx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=ff;bp.Q.value=3;
+        const fg=actx.createGain();fg.gain.value=(i===0?.7:i===1?.45:.28);
+        o.connect(bp);bp.connect(fg);fg.connect(out);});
+      o.start(t);o.stop(t+dur+.1);});
+  });
+  out.connect(master);const send=actx.createGain();send.gain.value=.3;out.connect(send);send.connect(delaySend);}
 function stab(t,freqs,dur,bright){dur=dur||.22;
   const g=actx.createGain();adsr(g,t,.005,.12,dur);
   const lp=actx.createBiquadFilter();lp.type='lowpass';
