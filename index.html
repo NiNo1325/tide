@@ -98,6 +98,10 @@
     font-size:14px}
   .stats .r .k{color:#bfeef0} .stats .r .v{font-weight:700;font-variant-numeric:tabular-nums}
 
+  /* Conteneurs dynamiques : colonne centrée à largeur cohérente */
+  #profileBody,#challengeBody,#leaderboardBody{display:flex;flex-direction:column;
+    align-items:center;width:100%;max-width:440px;margin:0 auto}
+
   .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);z-index:5;
     background:#0a2a3a;border:1px solid var(--line);border-radius:12px;padding:12px 18px;
     font-size:14px;opacity:0;transition:.25s;pointer-events:none;max-width:88vw}
