@@ -23,10 +23,10 @@
   #c{position:fixed;inset:0;display:block;width:100vw;height:100vh;touch-action:none;z-index:0}
 
   .screen{position:fixed;inset:0;z-index:2;display:none;flex-direction:column;
-    align-items:center;justify-content:center;text-align:center;padding:max(28px,7vh) 22px;
+    align-items:center;justify-content:safe center;text-align:center;padding:max(28px,7vh) 22px;
     pointer-events:none;overflow-y:auto}
   .screen.on{display:flex}
-  .screen>*{pointer-events:auto}
+  .screen>*{pointer-events:auto;flex:none}
 
   .brand{font-weight:200;letter-spacing:.22em;text-indent:.22em;line-height:.9;
     color:var(--foam);text-shadow:0 0 40px color-mix(in srgb,var(--accent) 55%,transparent)}
@@ -112,6 +112,7 @@
   @keyframes breathe{0%,100%{opacity:.45}50%{opacity:1}}
   @media (prefers-reduced-motion:reduce){.cue{animation:none;opacity:.8}}
   .sp{height:18px}
+  .screen [data-back]{margin-top:16px;flex:none}
   .ban{display:flex;align-items:center;gap:10px;background:color-mix(in srgb,var(--accent) 16%,transparent);
     border:1px solid var(--accent);border-radius:14px;padding:12px 16px;font-size:14px;max-width:420px;margin-bottom:18px}
 </style>
