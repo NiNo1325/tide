@@ -174,6 +174,15 @@
   <button class="btn ghost" data-back>‹ Retour</button>
 </div>
 
+<!-- LEADERBOARD -->
+<div id="leaderboardScreen" class="screen">
+  <div class="eyebrow">classement d'amis</div>
+  <div class="brand sm" id="lbTitle">classement</div>
+  <div id="leaderboardBody" style="width:100%;max-width:440px"></div>
+  <div class="sp"></div>
+  <button class="btn ghost" data-back>‹ Retour</button>
+</div>
+
 <!-- GAME OVER -->
 <div id="over" class="screen">
   <div class="eyebrow" id="overTitle">la vague s'est brisée</div>
@@ -198,7 +207,7 @@ console.log('%c tide v3 — ok ','background:#36d6c3;color:#04141f;font-weight:b
 const $=id=>document.getElementById(id);
 const canvas=$('c'), ctx=canvas.getContext('2d');
 const screens={home:$('home'),diff:$('diffScreen'),track:$('trackScreen'),
-  profile:$('profileScreen'),challenge:$('challengeScreen'),over:$('over')};
+  profile:$('profileScreen'),challenge:$('challengeScreen'),leaderboard:$('leaderboardScreen'),over:$('over')};
 
 /* ================= LAYOUT ================= */
 let W=0,H=0,DPR=1,CONTACT_X,BASE_Y,BEAT_PX,ARC_H,WAVE_AMP;
@@ -654,7 +663,24 @@ function buildTrackCards(){const c=$('trackCards');c.innerHTML='';TRACKS.forEach
   el.onclick=e=>{if(e.target.closest('.play'))return;selTrack=i;buildTrackCards();refreshHome();};
   el.querySelector('.play .btn').onclick=e=>{e.stopPropagation();previewTrack(i);};
   c.appendChild(el);});}
-function openLeaderboard(){ toast('Classement — bientôt'); }      /* remplacé en Task 9 */
+async function openLeaderboard(){
+  const body=$('leaderboardBody');
+  $('lbTitle').textContent=`${TRACKS[selTrack].name} · ${DIFFS[selDiff].name}`;
+  if(!window.tideFb || !window.tideFb.user){
+    body.innerHTML='<div class="note">Connecte-toi avec Google pour voir le classement de tes amis.</div>';
+    showScreen('leaderboard'); return;
+  }
+  body.innerHTML='<div class="note">Chargement…</div>';
+  showScreen('leaderboard');
+  try{
+    const rows=await window.tideFb.friendsLeaderboard(selTrack,selDiff);
+    const me=window.tideFb.user.uid;
+    if(!rows.length){ body.innerHTML='<div class="note">Aucun ami pour l’instant. Envoie un défi pour relier un ami !</div>'; return; }
+    body.innerHTML='<div class="stats">'+rows.map((r,i)=>
+      `<div class="r"${r.uid===me?' style="border-color:var(--accent)"':''}><span class="k">${i+1}. ${r.name}${r.uid===me?' (toi)':''}</span><span class="v">${r.best}</span></div>`
+    ).join('')+'</div>';
+  }catch(e){ body.innerHTML='<div class="note">Erreur de chargement du classement.</div>'; console.warn(e); }
+}
 function confirmDeleteAccount(){ toast('Suppression — bientôt'); } /* remplacé en Task 10 */
 function buildProfile(){
   const b=$('profileBody');const p=curProfile();

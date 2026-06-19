@@ -83,5 +83,24 @@ api.addFriend = async function(otherUid, otherName){
   await setDoc(doc(db,'friendships',id), { users: pair, createdAt: serverTimestamp() }, { merge:true });
 };
 
+api.friendsLeaderboard = async function(ti,di){
+  const u = api.user; if(!u) return [];
+  const { db, getDocs, collection, query, where } = api._db;
+  // 1) mes amitiés
+  const fq = query(collection(db,'friendships'), where('users','array-contains',u.uid));
+  const fsnap = await getDocs(fq);
+  const ids = new Set([u.uid]);
+  fsnap.forEach(d => d.data().users.forEach(x => ids.add(x)));
+  const uids = Array.from(ids).slice(0,30); // limite Firestore `in`
+  // 2) leurs scores pour (ti,di)
+  const sq = query(collection(db,'scores'),
+    where('ti','==',ti), where('di','==',di), where('uid','in',uids));
+  const ssnap = await getDocs(sq);
+  const rows = [];
+  ssnap.forEach(d => { const s=d.data(); rows.push({ uid:s.uid, name:s.displayName||'Joueur', photo:s.photoURL||'', best:s.best||0 }); });
+  rows.sort((a,b)=>b.best-a.best);
+  return rows;
+};
+
 window.tideFb = api;
 window.dispatchEvent(new Event('tidefb-ready'));
