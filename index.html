@@ -129,6 +129,18 @@
 <div id="home" class="screen">
   <div class="brand xl">tide</div>
   <div class="sub">Tape quand la vague atteint la bille. Garde le combo, la marée monte.</div>
+  <div class="stack">
+    <button class="btn primary wide" id="voyageBtn">⛵ Voyage</button>
+    <button class="btn wide" id="playBtn">Jeu libre</button>
+    <div class="sp"></div>
+    <button class="btn ghost" id="openChallenge">⚡ J'ai un code de défi</button>
+  </div>
+</div>
+
+<!-- FREE PLAY -->
+<div id="freeScreen" class="screen">
+  <div class="eyebrow">jeu libre</div>
+  <div class="brand sm">choisis</div>
   <div class="selrow">
     <div class="selcard" id="pickTrack">
       <div class="lab">musique</div>
@@ -140,12 +152,11 @@
     </div>
   </div>
   <div class="stack">
-    <button class="btn primary wide" id="voyageBtn">⛵ Voyage</button>
-    <button class="btn wide" id="playBtn">Jeu libre</button>
+    <button class="btn primary wide" id="freePlayBtn">Jouer</button>
     <div class="row" id="homeBest">Meilleur&nbsp;<b>0</b></div>
-    <div class="sp"></div>
-    <button class="btn ghost" id="openChallenge">⚡ J'ai un code de défi</button>
   </div>
+  <div class="sp"></div>
+  <button class="btn ghost" data-back>‹ Retour</button>
 </div>
 
 <!-- DIFFICULTY -->
@@ -154,7 +165,7 @@
   <div class="brand sm">choisis ton flot</div>
   <div class="cards" id="diffCards"></div>
   <div class="sp"></div>
-  <button class="btn ghost" data-back>‹ Retour</button>
+  <button class="btn ghost" data-back="free">‹ Retour</button>
 </div>
 
 <!-- TRACKS -->
@@ -163,7 +174,7 @@
   <div class="brand sm">choisis ta vague</div>
   <div class="cards" id="trackCards"></div>
   <div class="sp"></div>
-  <button class="btn ghost" data-back>‹ Retour</button>
+  <button class="btn ghost" data-back="free">‹ Retour</button>
 </div>
 
 <!-- PROFILE -->
@@ -215,7 +226,7 @@ console.log('%c tide v3 — ok ','background:#36d6c3;color:#04141f;font-weight:b
 /* ================= DOM ================= */
 const $=id=>document.getElementById(id);
 const canvas=$('c'), ctx=canvas.getContext('2d');
-const screens={home:$('home'),diff:$('diffScreen'),track:$('trackScreen'),
+const screens={home:$('home'),free:$('freeScreen'),diff:$('diffScreen'),track:$('trackScreen'),
   profile:$('profileScreen'),challenge:$('challengeScreen'),leaderboard:$('leaderboardScreen'),over:$('over')};
 
 /* ================= LAYOUT ================= */
@@ -808,7 +819,7 @@ function mapTap(x,y){
   }
   for(let i=0;i<mapPos.length;i++){
     const p=mapPos[i];
-    if(Math.hypot(x-p.x,y-p.y)<26){
+    if(Math.hypot(x-p.x,y-p.y)<38){
       if(levelUnlocked(i,mapWorld)){
         mapView=false;$('mapBack').style.display='none';
         selTrack=i;selDiff=mapWorld;startGame();
@@ -1051,6 +1062,9 @@ function showOver(){
     $('overSub').innerHTML='record&nbsp;<b id="bestScore">'+best+'</b>';
     $('challengeFriendBtn').textContent='⚡ Défier un ami';
   }
+  // petit délai anti-clic accidentel sur « Rejouer » juste après la fin
+  const rb=$('retryBtn');if(rb){rb.disabled=true;rb.style.opacity='.45';
+    setTimeout(()=>{rb.disabled=false;rb.style.opacity='';},900);}
   showScreen('over');
 }
 function showChallengeShareFallback(text){
@@ -1090,7 +1104,8 @@ function openPasteChallenge(){
 /* ================= INPUT WIRING ================= */
 canvas.addEventListener('pointerdown',e=>{e.preventDefault();if(mapView){mapTap(e.clientX,e.clientY);return;}onTap();});
 window.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();onTap();}});
-$('playBtn').onclick=()=>{pendingChallenge=null;
+$('playBtn').onclick=()=>{pendingChallenge=null;refreshHome();showScreen('free');};
+$('freePlayBtn').onclick=()=>{pendingChallenge=null;
   if(!levelUnlocked(selTrack,selDiff)){toast('Niveau verrouillé 🔒');return;}
   startGame();};
 $('voyageBtn').onclick=()=>{pendingChallenge=null;openMap();};
@@ -1102,7 +1117,7 @@ $('openChallenge').onclick=()=>openPasteChallenge();
 $('retryBtn').onclick=()=>startGame();
 $('menuBtn').onclick=()=>{pendingChallenge=null;refreshHome();showScreen('home');};
 $('challengeFriendBtn').onclick=()=>shareChallenge();
-document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{refreshHome();showScreen('home');});
+document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{const t=b.getAttribute('data-back')||'home';refreshHome();showScreen(t==='free'?'free':'home');});
 
 /* ================= INIT ================= */
 requestAnimationFrame(loop);
