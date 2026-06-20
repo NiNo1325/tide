@@ -804,8 +804,11 @@ function surferIso(){
 }
 function mapCenterCam(){const s=surferIso();camX=s.ix;camY=s.iy;}
 function openMap(){const nl=nextLevel();mapWorld=nl.di;mapCur=pos(nl.ti);mapAnim=null;mapParts=[];
-  mapCenterCam();mapView=true;showScreen(null);$('mapBack').style.display='block';}
-function closeMap(){mapView=false;$('mapBack').style.display='none';refreshHome();showScreen('home');}
+  mapCenterCam();mapView=true;showScreen(null);$('mapBack').style.display='block';
+  try{resumeAudio();master.gain.cancelScheduledValues(actx.currentTime);master.gain.setTargetAtTime(.8,actx.currentTime,.05);}catch(e){}}
+function closeMap(){mapView=false;$('mapBack').style.display='none';
+  try{if(master)master.gain.setTargetAtTime(.0001,actx.currentTime,.05);}catch(e){}
+  refreshHome();showScreen('home');}
 function mapSetWorld(d){mapWorld=Math.max(0,Math.min(3,d));const nl=nextLevel();
   mapCur=(nl.di===mapWorld)?pos(nl.ti):0;mapAnim=null;mapCenterCam();}
 function spawnSplash(x,y){for(let i=0;i<12;i++){const a=Math.random()*Math.PI*2,sp=1+Math.random()*3;
