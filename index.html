@@ -253,7 +253,7 @@ const surferImg=new Image();let surferReady=false,surferBuf=null;
 surferImg.onload=()=>{try{surferBuf=document.createElement('canvas');surferBuf.width=32;surferBuf.height=32;
   const bc=surferBuf.getContext('2d');bc.imageSmoothingEnabled=false;bc.drawImage(surferImg,0,0,32,32);surferReady=true;}catch(e){}};
 surferImg.src='assets/surfer.svg';
-const SURFER_GAME=30,SURFER_MAP=30;   // tailles à l'écran (réglables)
+const SURFER_GAME=45,SURFER_MAP=30;   // tailles à l'écran (réglables)
 function drawSurfer(cx,cy,size){
   if(!surferReady){ctx.beginPath();ctx.arc(cx,cy,8,0,Math.PI*2);ctx.fillStyle='#eafbff';ctx.fill();return;}
   const prev=ctx.imageSmoothingEnabled;ctx.imageSmoothingEnabled=false;
@@ -926,9 +926,9 @@ function drawWorld(intensity){
     ctx.stroke();
     for(let i=0;i<nd.length;i++){const nx=CONTACT_X+(nd[i].beat-cb)*BEAT_PX;if(nx<-30)continue;if(nx>W+30)break;
       const isNext=i===lane.nextNode,isPast=i<lane.nextNode;
-      ctx.beginPath();ctx.arc(nx,nd[i].y,isNext?6:4,0,Math.PI*2);
+      ctx.beginPath();ctx.arc(nx,nd[i].y,isNext?9:6,0,Math.PI*2);
       ctx.fillStyle=isPast?`rgba(${col[0]},${col[1]},${col[2]},.25)`:isNext?'#eafbff':'rgba(234,251,255,.6)';ctx.fill();
-      if(isNext){ctx.beginPath();ctx.arc(nx,nd[i].y,13,0,Math.PI*2);
+      if(isNext){ctx.beginPath();ctx.arc(nx,nd[i].y,20,0,Math.PI*2);
         ctx.strokeStyle=`rgba(${col[0]},${col[1]},${col[2]},.7)`;ctx.lineWidth=2;ctx.stroke();}}
     const ball=ballPos(lane,cb);
     lane.trail.push({x:ball.x,y:ball.y});if(lane.trail.length>14)lane.trail.shift();
