@@ -361,6 +361,8 @@ function nextLevel(){
   }
   return {ti:WORLDS[0][0],d:0,k:0};
 }
+// Difficulté auto du Voyage : monte par décennie et un peu au sein de chaque décennie (Calme→Hardcore).
+function campaignDiff(d,k){const base=[0,1,1,2,3][d]||1;return Math.min(3,base+(k>=10?1:0));}
 
 /* ================= AUDIO ================= */
 let actx,master,lowShelf,comp,delay,delayFb,delaySend,noiseBuf;
@@ -990,8 +992,9 @@ function mapTap(x,y){
   if(best===mapCur){
     const ti=songs[mapCur];
     if(songUnlocked(ti)){mapView=false;$('mapBack').style.display='none';
-      selTrack=ti;try{resumeAudio();pluck(actx.currentTime,N(7,5),.3,true);}catch(e){}
-      refreshHome();showScreen('free');}   // choisir la difficulté puis Jouer
+      selTrack=ti;selDiff=campaignDiff(mapWorld,mapCur);   // difficulté auto du Voyage
+      try{resumeAudio();pluck(actx.currentTime,N(7,5),.3,true);}catch(e){}
+      startGame();}   // lance directement la chanson de l'île
     else toast('Île verrouillée 🔒');
     return;
   }
