@@ -614,7 +614,17 @@ function playStep(step,t,combo){
     voc(t, chV.pad, spbNow()*2, T.vocType||'aah', T.vocGain||(T.lead?.32:.22));
   }
   if(combo>=10 && sib%8===0 && !T.lead){const ch=T.prog[Math.floor(beat/2)%T.prog.length];pad(t,ch.pad,spbNow()*2);}
-  if(combo>=20 && (sub===1||sub===3)){const f=N(T.keyRoot+PENT[(beat+sub)%5],5);pluck(t,f,.08,true);}
+  // arpège mélodique (contre-chant) sur les notes de l'accord courant
+  if(combo>=14 && (sub===0||sub===2)){
+    const chA=T.prog[Math.floor(beat/2)%T.prog.length],tones=chA.pad;
+    if(tones&&tones.length){
+      const eighth=beat*2+(sub===2?1:0);
+      const seq=[0,1,2,1,0,2,1,2];
+      const idx=seq[eighth%seq.length]%tones.length;
+      const oct=(eighth%8)>=6?2:1;
+      pluck(t,tones[idx]*oct,.09,true);
+    }
+  }
   if(delaySend) delaySend.gain.setTargetAtTime(Math.min(combo/40,1)*.3,t,.2);
 }
 
