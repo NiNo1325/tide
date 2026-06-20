@@ -723,6 +723,7 @@ const game={state:'menu',startTime:0,spb:.5,lanes:[],
   combo:0,score:0,perfects:0,particles:[],judge:null,shake:0,
   deathT:0,total:0,_tide:0};
 function makeLane(baseY){return {nodes:[],genBeat:0,nextNode:0,baseY,trail:[],lastTap:-1};}
+let launchFromMap=false;   // la partie a-t-elle été lancée depuis la carte (Voyage) ?
 function nodeY(lane,b){return lane.baseY+Math.sin(b*.55+1.3)*WAVE_AMP;}
 // PRNG seedé (mulberry32) → motifs DÉTERMINISTES : un morceau joue toujours la même chose.
 function rng(seed){let a=seed>>>0;return function(){a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);
@@ -760,6 +761,7 @@ function riser(t,dur){const s=actx.createBufferSource();s.buffer=noiseBuf;s.loop
   s.connect(bp);bp.connect(g);g.connect(master);s.start(t);s.stop(t+dur+.05);}
 function startGame(){
   resumeAudio();applyEQ();applyTrackVisual();
+  game.fromMap=launchFromMap;launchFromMap=false;
   const duo=!!(DIFFS[selDiff]&&DIFFS[selDiff].duo);
   game.state='play';game.combo=0;game.score=0;game.perfects=0;
   game.particles=[];game.judge=null;game.shake=0;game.spb=spbNow();
@@ -995,7 +997,7 @@ function mapTap(x,y){
   if(best===mapCur){
     const ti=songs[mapCur];
     if(songUnlocked(ti)){mapView=false;$('mapBack').style.display='none';
-      selTrack=ti;selDiff=mapWorld;   // difficulté = le coin/monde courant
+      selTrack=ti;selDiff=mapWorld;launchFromMap=true;   // difficulté = le coin/monde courant
       try{resumeAudio();pluck(actx.currentTime,N(7,5),.3,true);}catch(e){}
       startGame();}   // lance directement la chanson de l'île
     else toast('Île verrouillée 🔒');
@@ -1249,6 +1251,7 @@ function showOver(){
     $('overSub').innerHTML='record&nbsp;<b id="bestScore">'+best+'</b>';
     $('challengeFriendBtn').textContent='⚡ Défier un ami';
   }
+  const mb=$('menuBtn');if(mb)mb.textContent=game.fromMap?'🗺 Carte':'Menu';
   // petit délai anti-clic accidentel sur « Rejouer » juste après la fin
   const rb=$('retryBtn');if(rb){rb.disabled=true;rb.style.opacity='.45';
     setTimeout(()=>{rb.disabled=false;rb.style.opacity='';},900);}
@@ -1302,7 +1305,7 @@ $('pickDiff').onclick=()=>{buildDiffCards();showScreen('diff');};
 $('chip').onclick=()=>{buildProfile();showScreen('profile');};
 $('openChallenge').onclick=()=>openPasteChallenge();
 $('retryBtn').onclick=()=>startGame();
-$('menuBtn').onclick=()=>{pendingChallenge=null;refreshHome();showScreen('home');};
+$('menuBtn').onclick=()=>{pendingChallenge=null;if(game.fromMap){openMap();}else{refreshHome();showScreen('home');}};
 $('challengeFriendBtn').onclick=()=>shareChallenge();
 document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{const t=b.getAttribute('data-back')||'home';refreshHome();showScreen(t==='free'?'free':'home');});
 
