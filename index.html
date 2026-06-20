@@ -241,10 +241,7 @@ function layout(){
 let mapView=false,mapWorld=0,mapCur=0,mapAnim=null;
 let camX=0,camY=0,mapParts=[];
 // positions normalisées (0..1) des 11 îles sur worldmap.png — à ajuster île par île
-// 20 positions d'îles (normalisées) réutilisées par décennie — à ajuster île par île
-const MAP_NODES=[[0.09,0.12],[0.20,0.20],[0.13,0.34],[0.27,0.40],[0.18,0.55],[0.30,0.64],[0.12,0.74],[0.26,0.84],
-  [0.40,0.18],[0.45,0.33],[0.52,0.47],[0.44,0.60],[0.55,0.72],[0.42,0.85],
-  [0.66,0.22],[0.72,0.38],[0.64,0.52],[0.78,0.58],[0.70,0.72],[0.84,0.42]];
+// Positions d'îles calculées par islandNorm(world,k) (un coin par difficulté).
 const mapImg=new Image();let mapImgReady=false;
 mapImg.onload=()=>{mapImgReady=true;if(mapView)mapCenterCam();};
 mapImg.src='assets/worldmap.png';
@@ -349,20 +346,18 @@ function recordScore(ti,di,score,perfects){
 function bestFor(ti,di){const key=ti+'|'+di;const p=curProfile();if(p){const s=p.stats[key];return s?s.best:0;}return sessionBest[key]||0;}
 function starsFor(ti,di){const p=curProfile();if(!p)return 0;const s=p.stats[ti+'|'+di];return (s&&s.stars)||0;}
 function songStars(ti){let m=0;for(let di=0;di<DIFFS.length;di++)m=Math.max(m,starsFor(ti,di));return m;}
-function decadeUnlocked(d){if(d<=0)return true;const prev=WORLDS[d-1],n=Math.min(10,prev.length);
+function worldUnlocked(w){if(w<=0)return true;const prev=WORLDS[w-1],n=Math.ceil(prev.length*0.6);
   let c=0;for(let i=0;i<n;i++)if(songStars(prev[i])>=2)c++;return c>=n;}
-function islandIdx(ti){return WORLDS[TRACKS[ti].decade].indexOf(ti);}
-function songUnlocked(ti){const d=TRACKS[ti].decade,k=islandIdx(ti);
-  if(!decadeUnlocked(d))return false;if(k<=0)return true;return songStars(WORLDS[d][k-1])>=2;}
+function islandIdx(ti){return WORLDS[TRACKS[ti].world].indexOf(ti);}
+function songUnlocked(ti){const w=TRACKS[ti].world,k=islandIdx(ti);
+  if(!worldUnlocked(w))return false;if(k<=0)return true;return songStars(WORLDS[w][k-1])>=2;}
 function nextLevel(){
-  for(let d=0;d<WORLDS.length;d++){if(!decadeUnlocked(d))continue;
-    for(let k=0;k<WORLDS[d].length;k++){const ti=WORLDS[d][k];
-      if(songUnlocked(ti)&&songStars(ti)<2)return {ti,d,k};}
+  for(let w=0;w<WORLDS.length;w++){if(!worldUnlocked(w))continue;
+    for(let k=0;k<WORLDS[w].length;k++){const ti=WORLDS[w][k];
+      if(songUnlocked(ti)&&songStars(ti)<2)return {ti,w,k};}
   }
-  return {ti:WORLDS[0][0],d:0,k:0};
+  return {ti:WORLDS[0][0],w:0,k:0};
 }
-// Difficulté auto du Voyage : monte par décennie et un peu au sein de chaque décennie (Calme→Hardcore).
-function campaignDiff(d,k){const base=[0,1,1,2,3][d]||1;return Math.min(3,base+(k>=10?1:0));}
 
 /* ================= AUDIO ================= */
 let actx,master,lowShelf,comp,delay,delayFb,delaySend,noiseBuf;
@@ -634,8 +629,16 @@ function genTrack(d,idx){const P=DECADE_DEFS[d],key=KEYS[idx%KEYS.length];
 [0,1,2,4,0,4,2,3,3,2,2].forEach((d,i)=>{if(TRACKS[i])TRACKS[i].decade=d;});
 // compléter chaque décennie à 20 morceaux → 100 au total
 for(let d=0;d<5;d++){let cnt=TRACKS.filter(t=>t.decade===d).length,gi=0;while(cnt<20){TRACKS.push(genTrack(d,gi++));cnt++;}}
-const WORLDS=[[],[],[],[],[]];TRACKS.forEach((t,i)=>WORLDS[t.decade].push(i));
+const DECADE_SONGS=[[],[],[],[],[]];TRACKS.forEach((t,i)=>DECADE_SONGS[t.decade].push(i));
 const DECADES=DECADE_DEFS.map(p=>p.label.split(' · ')[0]);
+// 4 mondes de DIFFICULTÉ : ~25 chansons chacun, mix de décennies (5 par décennie/monde)
+const WORLDS=[[],[],[],[]];
+for(let dec=0;dec<5;dec++){DECADE_SONGS[dec].forEach((ti,j)=>{const w=Math.min(3,Math.floor(j/5));WORLDS[w].push(ti);TRACKS[ti].world=w;});}
+// chaque difficulté = un coin de la carte ; îles en grille sinueuse dans ce coin
+const CORNERS=[[0.05,0.10],[0.53,0.10],[0.05,0.54],[0.53,0.54]];
+function islandNorm(w,k){const c=CORNERS[w]||CORNERS[0],cols=5,n=WORLDS[w].length,rows=Math.max(1,Math.ceil(n/cols));
+  const r=Math.floor(k/cols),cc=k%cols,ltr=r%2===0,col=ltr?cc:(cols-1-cc);
+  return [c[0]+(cols>1?col/(cols-1):0)*0.42, c[1]+(rows>1?r/(rows-1):0)*0.40];}
 const DIFFS=[
   {name:'Calme', blurb:'Une touche par temps. Fenêtre large, on respire.', meter:1,
    tempo:.85, good:.20, perfect:.09, dens0:0, densMax:.18, sixteenth:false},
@@ -878,7 +881,7 @@ async function shareChallenge(){
 
 /* ================= MAP ================= */
 function mapScale(){return mapImgReady?Math.max(W/mapImg.width,H/mapImg.height)*1.8:1;}
-function nodeImg(k){return {x:MAP_NODES[k][0]*(mapImgReady?mapImg.width:W), y:MAP_NODES[k][1]*(mapImgReady?mapImg.height:H)};}
+function nodeImg(k){const p=islandNorm(mapWorld,k);return {x:p[0]*(mapImgReady?mapImg.width:W), y:p[1]*(mapImgReady?mapImg.height:H)};}
 function nodeScreen(k){const sc=mapScale(),p=nodeImg(k);return {x:p.x*sc-camX, y:p.y*sc-camY};}
 function surferImgPos(){
   if(mapAnim){const t=Math.min(1,(performance.now()-mapAnim.t0)/280);
@@ -890,14 +893,14 @@ function mapCenterCam(){if(!mapImgReady)return;const sc=mapScale(),s=surferImgPo
   camX=s.x*sc-W/2;camY=s.y*sc-H/2;
   camX=Math.max(0,Math.min(camX,Math.max(0,mapImg.width*sc-W)));
   camY=Math.max(0,Math.min(camY,Math.max(0,mapImg.height*sc-H)));}
-function openMap(){const nl=nextLevel();mapWorld=nl.d;mapCur=nl.k;mapAnim=null;mapParts=[];
+function openMap(){const nl=nextLevel();mapWorld=nl.w;mapCur=nl.k;mapAnim=null;mapParts=[];
   mapCenterCam();mapView=true;showScreen(null);$('mapBack').style.display='block';
   try{resumeAudio();master.gain.cancelScheduledValues(actx.currentTime);master.gain.setTargetAtTime(.8,actx.currentTime,.05);}catch(e){}}
 function closeMap(){mapView=false;$('mapBack').style.display='none';
   try{if(master)master.gain.setTargetAtTime(.0001,actx.currentTime,.05);}catch(e){}
   refreshHome();showScreen('home');}
 function mapSetWorld(d){mapWorld=Math.max(0,Math.min(WORLDS.length-1,d));const nl=nextLevel();
-  mapCur=(nl.d===mapWorld)?nl.k:0;mapAnim=null;mapCenterCam();}
+  mapCur=(nl.w===mapWorld)?nl.k:0;mapAnim=null;mapCenterCam();}
 function spawnSplash(x,y){for(let i=0;i<12;i++){const a=Math.random()*Math.PI*2,sp=1+Math.random()*3;
   mapParts.push({x,y,vx:Math.cos(a)*sp,vy:-Math.abs(Math.sin(a)*sp)-1,life:1});}}
 function drawMapParts(){for(let i=mapParts.length-1;i>=0;i--){const p=mapParts[i];
@@ -974,7 +977,7 @@ function drawMap(){
   ctx.fillStyle='rgba(4,20,31,.5)';ctx.fillRect(0,0,W,H*0.12);
   ctx.textAlign='center';ctx.fillStyle='rgba(234,251,255,.95)';
   ctx.font='600 16px -apple-system,Helvetica,Arial,sans-serif';
-  ctx.fillText('DÉCENNIE · '+DECADES[di]+(decadeUnlocked(di)?'':' 🔒'), W/2, H*0.05);
+  ctx.fillText('DIFFICULTÉ · '+DIFFS[di].name+(worldUnlocked(di)?'':' 🔒'), W/2, H*0.05);
   ctx.font='600 26px -apple-system,Helvetica,Arial,sans-serif';
   ctx.fillStyle=di>0?'rgba(234,251,255,.85)':'rgba(234,251,255,.25)';ctx.fillText('‹', W*0.12, H*0.055);
   ctx.fillStyle=di<WORLDS.length-1?'rgba(234,251,255,.85)':'rgba(234,251,255,.25)';ctx.fillText('›', W*0.88, H*0.055);
@@ -992,7 +995,7 @@ function mapTap(x,y){
   if(best===mapCur){
     const ti=songs[mapCur];
     if(songUnlocked(ti)){mapView=false;$('mapBack').style.display='none';
-      selTrack=ti;selDiff=campaignDiff(mapWorld,mapCur);   // difficulté auto du Voyage
+      selTrack=ti;selDiff=mapWorld;   // difficulté = le coin/monde courant
       try{resumeAudio();pluck(actx.currentTime,N(7,5),.3,true);}catch(e){}
       startGame();}   // lance directement la chanson de l'île
     else toast('Île verrouillée 🔒');
@@ -1146,12 +1149,12 @@ function buildDiffCards(){const c=$('diffCards');c.innerHTML='';DIFFS.forEach((d
   el.onclick=()=>{selDiff=i;buildDiffCards();refreshHome();};
   c.appendChild(el);});}
 function buildTrackCards(){const c=$('trackCards');c.innerHTML='';
-  for(let d=0;d<WORLDS.length;d++){
+  for(let d=0;d<DECADE_SONGS.length;d++){
     const head=document.createElement('div');
     head.style.cssText='width:100%;max-width:440px;margin:12px auto 2px;color:#7fd9d2;font-size:12px;letter-spacing:.16em;text-transform:uppercase;text-align:left';
-    head.textContent=DECADES[d]+(decadeUnlocked(d)?'':' 🔒');
+    head.textContent=DECADES[d];
     c.appendChild(head);
-    WORLDS[d].forEach((i)=>{
+    DECADE_SONGS[d].forEach((i)=>{
       const t=TRACKS[i],locked=!songUnlocked(i),st=songStars(i),stars='★'.repeat(st)+'☆'.repeat(3-st);
       const el=document.createElement('div');el.className='opt'+(i===selTrack?' sel':'')+(locked?' locked':'');
       el.innerHTML=`<div class="dot" style="border-color:${t.accent};${i===selTrack?'background:'+t.accent:''}"></div>
