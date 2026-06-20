@@ -297,16 +297,33 @@ function wireAuth(){
   if(!window.tideFb) return;
   window.tideFb.onChange(async (u)=>{
     if (u){
+      const prevId = currentId;
       const id = 'g_'+u.uid;
       if (!profiles[id]) profiles[id] = { id, name:(u.displayName||'Joueur').slice(0,20), email:(u.email||''), uid:u.uid, created:Date.now(), stats:{}, history:[] };
       else { profiles[id].name=(u.displayName||profiles[id].name); profiles[id].email=(u.email||profiles[id].email); }
+      // fusionne la progression locale (Invité) dans le compte Google
+      if (prevId && prevId!==id && profiles[prevId]) mergeStats(profiles[id], profiles[prevId]);
       currentId = id; await persist();
       await syncFromCloud();
+    } else {
+      ensureLocalProfile();   // déconnecté → on retombe sur le profil local
     }
     refreshHome(); buildProfile();
   });
 }
 function curProfile(){return currentId?profiles[currentId]:null;}
+function ensureLocalProfile(){
+  // Profil local par défaut : la progression est sauvegardée sur l'appareil sans connexion.
+  if(currentId && profiles[currentId]) return currentId;
+  if(!profiles['local']) profiles['local']={id:'local',name:'Invité',email:'',created:Date.now(),stats:{},history:[]};
+  currentId='local';persist();return currentId;
+}
+function mergeStats(dst,src){
+  if(!src||!src.stats) return;
+  for(const k in src.stats){const a=dst.stats[k]||{best:0,plays:0,pct:0,cleared:false,stars:0},b=src.stats[k];
+    dst.stats[k]={best:Math.max(a.best||0,b.best||0),plays:Math.max(a.plays||0,b.plays||0),
+      pct:Math.max(a.pct||0,b.pct||0),cleared:!!(a.cleared||b.cleared),stars:Math.max(a.stars||0,b.stars||0)};}
+}
 function createProfile(name,email){
   const id='p'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
   profiles[id]={id,name:(name||'Joueur').slice(0,20),email:(email||'').slice(0,60),created:Date.now(),stats:{},history:[]};
@@ -987,7 +1004,7 @@ async function confirmDeleteAccount(){
   try{
     const uid=window.tideFb.user.uid;
     await window.tideFb.deleteAccount();
-    delete profiles['g_'+uid]; currentId=null; await persist();
+    delete profiles['g_'+uid]; currentId=null; ensureLocalProfile();
     refreshHome(); buildProfile(); showScreen('home'); toast('Compte supprimé');
   }catch(e){
     console.warn(e);
@@ -995,47 +1012,30 @@ async function confirmDeleteAccount(){
   }
 }
 function buildProfile(){
-  const b=$('profileBody');const p=curProfile();
-  if(!p){
-    b.innerHTML=`<div class="brand sm">connexion</div>
-      <div class="sub">Connecte-toi avec Google pour sauvegarder tes scores et les retrouver sur tous tes appareils.</div>
-      <div class="sp"></div>
-      <button class="btn primary wide" id="pfGoogle">Se connecter avec Google</button>
-      <div class="sp"></div>
-      <div class="sub" style="font-size:13px;opacity:.8">— ou joue sans compte —</div>
-      <div class="field"><label>Nom de joueur (local)</label><input id="pfName" maxlength="20" placeholder="Ton blaze"></div>
-      <button class="btn wide" id="pfCreate">Continuer sans compte</button>
-      <div class="note">Sans compte, tes scores restent sur cet appareil uniquement.</div>`;
-    b.querySelector('#pfGoogle').onclick=()=>{
-      if(window.tideFb){ toast('Redirection Google…'); window.tideFb.signIn(); }
-      else toast('Firebase indisponible');
-    };
-    b.querySelector('#pfCreate').onclick=()=>{const n=b.querySelector('#pfName').value.trim();
-      createProfile(n,'');refreshHome();buildProfile();toast('Profil local créé ✓');};
-  }else{
-    const u = window.tideFb && window.tideFb.user;
-    const name = u ? (u.displayName||'Joueur') : p.name;
-    const email = u ? (u.email||'') : (p.email||'');
-    let rows='';let any=false;
-    TRACKS.forEach((t,ti)=>DIFFS.forEach((d,di)=>{const s=p.stats[ti+'|'+di];
-      if(s){any=true;rows+=`<div class="r"><span class="k">${t.name} · ${d.name}</span><span class="v">${s.best}</span></div>`;}}));
-    if(!any)rows='<div class="note">Aucune partie enregistrée pour l’instant. Joue une vague !</div>';
-    b.innerHTML=`<div class="brand sm">${name}</div>
-      ${email?`<div class="sub">${email}</div>`:''}
-      ${u?'<div class="note">✓ Connecté avec Google — scores synchronisés.</div>':''}
-      <div class="stats">${rows}</div>
-      <div class="sp"></div>
-      <button class="btn wide" id="pfLeaderboard">⚡ Classement d'amis</button>
-      <div class="sp"></div>
-      <button class="btn ghost" id="pfLogout">Se déconnecter</button>
-      ${u?'<div class="sp"></div><button class="btn ghost" id="pfDelete" style="color:#ff8a8a">Supprimer mon compte</button>':''}`;
-    b.querySelector('#pfLeaderboard').onclick=()=>openLeaderboard();
-    b.querySelector('#pfLogout').onclick=()=>{
-      if(u && window.tideFb){ window.tideFb.signOut(); }
-      currentId=null;persist();buildProfile();refreshHome();toast('Déconnecté');
-    };
-    const del=b.querySelector('#pfDelete'); if(del) del.onclick=()=>confirmDeleteAccount();
-  }
+  const b=$('profileBody');const p=curProfile()||{name:'Invité',stats:{}};
+  const u = window.tideFb && window.tideFb.user;
+  const name = u ? (u.displayName||'Joueur') : (p.name||'Invité');
+  const email = u ? (u.email||'') : (p.email||'');
+  let rows='';let any=false;
+  TRACKS.forEach((t,ti)=>DIFFS.forEach((d,di)=>{const s=p.stats[ti+'|'+di];
+    if(s){any=true;const st=s.stars||0;const stars='★'.repeat(st)+'☆'.repeat(3-st);
+      rows+=`<div class="r"><span class="k">${t.name} · ${d.name}</span><span class="v" style="color:var(--gold);font-size:12px">${stars}</span></div>`;}}));
+  if(!any)rows='<div class="note">Aucune partie enregistrée pour l’instant. Joue une vague !</div>';
+  b.innerHTML=`<div class="brand sm">${name}</div>
+    ${email?`<div class="sub">${email}</div>`:''}
+    ${u?'<div class="note">✓ Connecté avec Google — progression synchronisée.</div>'
+       :'<div class="note">Progression sauvegardée sur cet appareil. Connecte-toi pour la synchroniser partout.</div>'}
+    ${!u?'<div class="sp"></div><button class="btn primary wide" id="pfGoogle">Se connecter avec Google</button>':''}
+    <div class="stats">${rows}</div>
+    <div class="sp"></div>
+    <button class="btn wide" id="pfLeaderboard">⚡ Classement d'amis</button>
+    ${u?'<div class="sp"></div><button class="btn ghost" id="pfLogout">Se déconnecter</button>'
+       +'<div class="sp"></div><button class="btn ghost" id="pfDelete" style="color:#ff8a8a">Supprimer mon compte</button>':''}`;
+  const g=b.querySelector('#pfGoogle'); if(g) g.onclick=()=>{
+    if(window.tideFb){ toast('Redirection Google…'); window.tideFb.signIn(); } else toast('Firebase indisponible'); };
+  b.querySelector('#pfLeaderboard').onclick=()=>openLeaderboard();
+  const lo=b.querySelector('#pfLogout'); if(lo) lo.onclick=()=>{ if(window.tideFb){window.tideFb.signOut();} toast('Déconnecté'); };
+  const del=b.querySelector('#pfDelete'); if(del) del.onclick=()=>confirmDeleteAccount();
 }
 function showOver(){
   $('finalScore').textContent=game.score;
@@ -1123,6 +1123,7 @@ document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{const t=b.get
 requestAnimationFrame(loop);
 (async function init(){
   await loadProfiles();
+  if(!currentId) ensureLocalProfile();   // progression locale par défaut
   if(!levelUnlocked(selTrack,selDiff)){const nl=nextLevel();selTrack=nl.ti;selDiff=nl.di;}
   refreshHome();
   // Lier l'état d'auth Firebase au profil courant.
