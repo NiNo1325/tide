@@ -342,12 +342,13 @@ function bestFor(ti,di){const key=ti+'|'+di;const p=curProfile();if(p){const s=p
 function starsFor(ti,di){const p=curProfile();if(!p)return 0;const s=p.stats[ti+'|'+di];return (s&&s.stars)||0;}
 function worldUnlocked(di){if(di<=0)return true;for(let k=0;k<5;k++){if(starsFor(ORDER[k],di-1)<2)return false;}return true;}
 function songUnlocked(ti){const k=pos(ti);return k<5 || starsFor(ORDER[k-1],0)>=2;}
-function levelUnlocked(ti,di){return worldUnlocked(di)&&songUnlocked(ti);}
+function levelUnlocked(ti,di){if(DIFFS[di]&&DIFFS[di].duo)return songUnlocked(ti);return worldUnlocked(di)&&songUnlocked(ti);}
 function nextLevel(){
-  for(let di=0;di<DIFFS.length;di++)for(let k=0;k<ORDER.length;k++){const ti=ORDER[k];
-    if(levelUnlocked(ti,di)&&starsFor(ti,di)<2)return {ti,di};
+  for(let di=0;di<DIFFS.length;di++){if(DIFFS[di].duo)continue;
+    for(let k=0;k<ORDER.length;k++){const ti=ORDER[k];
+      if(levelUnlocked(ti,di)&&starsFor(ti,di)<2)return {ti,di};}
   }
-  return {ti:ORDER[ORDER.length-1],di:DIFFS.length-1};
+  return {ti:ORDER[ORDER.length-1],di:3};
 }
 
 /* ================= AUDIO ================= */
@@ -579,6 +580,8 @@ const DIFFS=[
    tempo:1.15, good:.12, perfect:.055, dens0:.15, densMax:.7, sixteenth:true},
   {name:'Hardcore', blurb:'Tempo brutal, timing minuscule, déluge de notes. Aucune pitié.', meter:4,
    tempo:1.38, good:.085, perfect:.04, dens0:.32, densMax:.95, sixteenth:true},
+  {name:'Duo', blurb:'Deux doigts, deux vagues : gauche (haut) · droite (bas). Une erreur et c’est fini.', meter:3,
+   tempo:1.0, good:.17, perfect:.07, dens0:.04, densMax:.4, sixteenth:false, duo:true},
 ];
 let selTrack=0, selDiff=1;
 // Ordre de parcours par BPM croissant (lent→rapide). Les stats restent indexées par ti d'origine.
@@ -999,7 +1002,7 @@ function refreshHome(){
   refreshChip();applyTrackVisual();
 }
 function buildDiffCards(){const c=$('diffCards');c.innerHTML='';DIFFS.forEach((d,i)=>{
-  const locked=!worldUnlocked(i);
+  const locked = d.duo ? false : !worldUnlocked(i);
   const el=document.createElement('div');el.className='opt'+(i===selDiff?' sel':'')+(locked?' locked':'');
   let m='';for(let k=0;k<4;k++)m+=`<i class="${k<d.meter?'on':''}"></i>`;
   el.innerHTML=`<div class="dot"></div><div style="flex:1"><div class="ot">${d.name}${locked?' 🔒':''}</div>`+
